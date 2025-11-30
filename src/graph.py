@@ -16,6 +16,7 @@ from langgraph.graph import StateGraph, END
 
 from state import AgentState
 from tools.google_calendar import get_todays_event
+from tools.gmail import create_draft_email
 from brain import query_second_brain
 from dotenv import load_dotenv
 
@@ -140,6 +141,83 @@ def extract_keywords_from_calendar(calendar_text: str) -> list[str]:
 
     return unique_keywords
 
+def parse_and_create_email_drafts(text: str) -> int:
+    """
+    Parse email suggestions from briefing text and create Gmail drafts.
+
+    Looks for emails in the format:
+    ---DRAFT_EMAIL---
+    TO: recipient@example.com
+    SUBJECT: Subject line
+    BODY:
+    Email body...
+    ---END_EMAIL---
+
+    Args:
+        text: Briefing text that may contain email suggestions
+
+    Returns:
+        Number of email drafts created
+    """
+    # Find all email blocks
+    email_pattern = r'---DRAFT_EMAIL---\s*\n(.*?)\n---END_EMAIL---'
+    email_blocks = re.findall(email_pattern, text, re.DOTALL)
+
+    if not email_blocks:
+        return 0
+
+    print(f"\n[Email Drafts] Found {len(email_blocks)} suggested email(s)")
+
+    drafts_created = 0
+    for i, block in enumerate(email_blocks, 1):
+        try:
+            # Parse TO, SUBJECT, BODY
+            to_match = re.search(r'TO:\s*(.+)', block)
+            subject_match = re.search(r'SUBJECT:\s*(.+)', block)
+            body_match = re.search(r'BODY:\s*\n(.*)', block, re.DOTALL)
+
+            if not (to_match and subject_match and body_match):
+                print(f"Email {i}: Missing required fields, skipping")
+                continue
+
+            to = to_match.group(1).strip()
+            subject = subject_match.group(1).strip()
+            body = body_match.group(1).strip()
+
+            print(f"\n   Creating draft {i}:")
+            print(f"   To: {to}")
+            print(f"   Subject: {subject}")
+
+            # Create the draft
+            result = create_draft_email(to, subject, body)
+
+            if "successfully" in result:
+                drafts_created += 1
+            else:
+                print(f"Failed to create draft: {result}")
+
+        except Exception as e:
+            print(f"Error processing email {i}: {e}")
+
+    return drafts_created
+
+def remove_email_markers(text: str) -> str:
+    """
+    Remove email draft markers from the briefing text.
+
+    Args:
+        text: Briefing text with email markers
+
+    Returns:
+        Clean briefing text without email markers
+    """
+    # Remove all email blocks
+    pattern = r'---DRAFT_EMAIL---.*?---END_EMAIL---'
+    cleaned = re.sub(pattern, '', text, flags=re.DOTALL)
+    # Remove excessive whitespace
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    return cleaned.strip()
+
 def draft_briefing(state: AgentState) -> Dict[str, Any]:
     """
     Node 3: Draft a morning briefing using Gemini.
@@ -176,7 +254,19 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
         - Use a professional but friendly tone
         - Structure the briefing clearly with sections
         - If you find relevant context from notes, mention it specifically (e.g., "Your notes mention that Ryan prefers React")
-        - Prioritize what's most important for the day"""),
+        - Prioritize what's most important for the day
+        - If you identify that the user should send an email (follow-up, preparation, confirmation, etc.), suggest it using the special format below
+
+        Email Suggestion Format:
+        If you think an email should be sent, add a section at the end with:
+        ---DRAFT_EMAIL---
+        TO: recipient@example.com
+        SUBJECT: Email subject here
+        BODY:
+        Email body content here...
+        ---END_EMAIL---
+
+        You can suggest multiple emails by repeating this format."""),
 
                 ("user", """Please create my daily briefing.
 
@@ -193,6 +283,7 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
         2. Provides relevant context from my notes for each event
         3. Suggests priorities or preparation items
         4. Highlights any important connections or insights
+        5. If you notice I should send any emails (follow-ups, meeting prep, confirmations, etc.), suggest draft emails using the special format
 
         Format the briefing clearly with headers and bullet points.""")
     ])
@@ -215,7 +306,16 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
             "relevant_notes": relevant_notes
         })
 
-        print("Morning briefing generated\n")
+        print("Morning briefing generated")
+
+        # Check if the briefing includes email suggestions
+        emails_created = parse_and_create_email_drafts(daily_plan)
+
+        if emails_created:
+            # Remove email markers from the final briefing
+            daily_plan = remove_email_markers(daily_plan)
+            # Add summary of created drafts
+            daily_plan += f"\n\n **Email Drafts Created**: {emails_created}"
 
         return {"daily_plan": daily_plan}
 
