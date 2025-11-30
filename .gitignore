@@ -208,3 +208,4 @@ __marimo__/
 
 # Second brain agent specific
 data/chroma_db/
+data/notes/
