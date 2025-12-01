@@ -15,6 +15,7 @@ from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 
 from config import EMBEDDING_MODEL, CHROMA_DB_DIR, COLLECTION_NAME
+from tools.memory import get_relevant_preferences
 
 load_dotenv()
 
@@ -37,7 +38,11 @@ def query_second_brain(query: str, k: int = 5) -> str:
     # Check if API key is set
     if not GOOGLE_API_KEY:
         return "Error: GOOGLE_API_KEY is not set."
-    
+
+    # Fetch user preferences for personalization
+    print("Fetching user preferences...")
+    preferences = get_relevant_preferences(query)
+
     # Initialize embeddings
     print(f"Loading embeddings model: {EMBEDDING_MODEL}")
     embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL, model_kwargs={'device': 'cpu'}, encode_kwargs={'normalize_embeddings': True})
@@ -63,17 +68,26 @@ def query_second_brain(query: str, k: int = 5) -> str:
     # Prepare context from retrieved documents
     context = "\n\n---\n\n".join([doc.page_content for doc in relevant_docs])
 
+    # Build system prompt with optional preferences
+
+    system_prompt = """You are a helpful assistant that answers questions based ONLY on the provided context from the user's personal notes (their "Second Brain").
+
+Guidelines:
+- Answer the question using ONLY information from the context provided
+- If the context contains relevant information, provide a clear, concise answer
+- If the answer is NOT in the context, respond with: "I don't have that in your Second Brain records."
+- Do not use external knowledge or make assumptions beyond what's in the context
+- Cite specific details from the notes when possible
+- Be conversational but accurate"""
+
+    # Inject user preferences if available
+    if preferences:
+        system_prompt += f"\n\n{preferences}"
+
     # Create prompt template
     prompt_template = ChatPromptTemplate.from_messages([
-        ("system", """You are a helpful assistant that answers questions based ONLY on the provided context from the user's personel notes.
-         Guidelines:
-         - Answer the question using ONLY information from the context provided.
-         - If the context contains relevant information, provide a clear, concise answer
-         - If the answer is NOT in the context, respond with: "I don't have that in your Second Brain records.
-         - Do not use external knowledge or make assumptions beyond what's in the context
-         - Cite specific details from the notes when possible
-         - Be conversational but accurate."""),
-         ("user","""Context from my notes:
+        ("system", system_prompt),
+        ("user","""Context from my notes:
         {context}
         ---
         Question: {query}
