@@ -178,7 +178,7 @@ def generate_design(state: ArchitectState) -> ArchitectState:
     llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.4)
 
     # Generate the design
-    messages = [("system", system_prompt), {"user", user_prompt}]
+    messages = [("system", system_prompt), ("user", user_prompt)]
 
     response = llm.invoke(messages)
     design = response.content

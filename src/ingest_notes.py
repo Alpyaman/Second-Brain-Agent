@@ -202,7 +202,7 @@ def load_code_documents(file_paths: List[Path]) -> List[Document]:
 
     return documents
 
-def chunkn_code_documents(documents: List[Document]) -> List[Document]:
+def chunk_code_documents(documents: List[Document]) -> List[Document]:
     """
     Split code documents using Python-aware chunking.
 
@@ -277,7 +277,7 @@ def ingest_codebase(directory: Path, collection_name: str= "coding_brain"):
     
     # Step 3: Chunk code
     print("\nChunking code (Python-aware)...")
-    chunks = chunkn_code_documents(documents)
+    chunks = chunk_code_documents(documents)
     print(f"Created {len(chunks)} chunk(s)")
 
     # Step 4: Ingest to ChromaDB
