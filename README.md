@@ -101,7 +101,7 @@ print(answer)
 
 To give your agent the ability to see your schedule:
 
-1. **Follow the detailed setup guide**: [GOOGLE_CALENDAR_SETUP.md](GOOGLE_CALENDAR_SETUP.md)
+1. **Follow the setup guide**:
    - Create a Google Cloud Project
    - Enable Google Calendar API
    - Download `credentials.json`
@@ -130,7 +130,7 @@ To give your agent the ability to see your schedule:
 
 To give your agent the ability to draft emails:
 
-1. **Follow the detailed setup guide**: [GMAIL_SETUP.md](GMAIL_SETUP.md)
+1. **Follow the setup guide**:
    - Enable Gmail API in your Google Cloud Project
    - Add Gmail scope to OAuth consent screen
    - Authenticate and generate Gmail token
@@ -224,7 +224,7 @@ The agent will create draft emails in your Gmail when it identifies follow-ups, 
 
 ## Development Roadmap
 
-### Phase 1: The "Librarian" (Knowledge Base) ✅
+### Phase 1: The "Librarian" (Knowledge Base)
 - Ingest and index markdown/Notion notes
 - Build vector search capabilities with ChromaDB
 - Implement retrieval-augmented generation (RAG)
@@ -237,7 +237,7 @@ The agent will create draft emails in your Gmail when it identifies follow-ups, 
 - OAuth 2.0 authentication flow
 - Detailed setup documentation
 
-### Phase 3: The "Chief of Staff" (LangGraph Orchestration) ✅
+### Phase 3: The "Chief of Staff" (LangGraph Orchestration)
 - Define agent state with TypedDict
 - Create LangGraph workflow with three nodes:
   - check_schedule: Retrieve calendar events
@@ -247,7 +247,7 @@ The agent will create draft emails in your Gmail when it identifies follow-ups, 
 - Context-aware briefing generation
 - End-to-end agent workflow
 
-### Phase 4: The "Hands" (Email Drafting) ✅
+### Phase 4: The "Hands" (Email Drafting)
 - Gmail API integration with OAuth 2.0
 - Create draft emails (compose-only access)
 - Intelligent email suggestion from briefings
