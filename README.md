@@ -380,7 +380,7 @@ Retrieving code context and preferences...
 Generating architectural design...
    Design v1 generated
 
-📐 ARCHITECTURAL DESIGN DOCUMENT (v1)
+ARCHITECTURAL DESIGN DOCUMENT (v1)
 
 # Real-Time Chat Application Architecture
 
@@ -435,6 +435,71 @@ Refining Design Based on Feedback...
 - Exploring different architectural approaches aligned with your style
 - Learning best practices from your own codebase
 
+### 12. Curator Agent - Automated Codebase Discovery
+
+The **Curator Agent** automates the discovery and ingestion of high-quality codebases into your specialized brain collections. Instead of manually searching for repositories, the Curator Agent intelligently discovers, filters, and categorizes codebases for you.
+
+**What It Does:**
+- Automatically searches for high-quality GitHub repositories using targeted queries
+- Uses LLM to assess quality (1-10 scoring) and relevance
+- Categorizes repositories into appropriate collections (frontend_brain, backend_brain, fullstack_brain)
+- Extracts technologies and provides reasoning for each assessment
+- Automatically ingests approved repositories (quality >= 7/10)
+- Supports both predefined queries and LLM-generated custom queries
+
+**Quick Start:**
+
+```bash
+# Discovery only (recommended first run)
+python curator.py --discover-only
+
+# Full workflow with ingestion for frontend and backend
+python curator.py
+
+# Target specific domains
+python curator.py --domains frontend --discover-only
+
+# Use LLM to generate custom queries
+python curator.py --mode auto --domains backend
+
+# Add custom search queries
+python curator.py --query "FastAPI authentication template site:github.com"
+```
+
+**Example Output:**
+
+```
+Assessment Results:
+1. https://github.com/shadcn-ui/ui
+   Quality: 9/10 | Category: frontend | Collection: frontend_brain
+   Technologies: React, TypeScript, Radix UI, Tailwind CSS
+   Reasoning: High-quality component library with excellent documentation
+
+2. https://github.com/tiangolo/fastapi-template
+   Quality: 9/10 | Category: backend | Collection: backend_brain
+   Technologies: FastAPI, Python, PostgreSQL, Docker
+   Reasoning: Official FastAPI template with production-ready setup
+
+Summary: 2 repositories approved for ingestion
+```
+
+**Features:**
+- **4-node LangGraph workflow**: Query generation → Search execution → LLM filtering → Ingestion
+- **Structured output**: Pydantic models ensure consistent, validated assessments
+- **Domain-specific collections**: Separate brains for frontend, backend, and fullstack
+- **Quality threshold**: Only ingests repositories with quality score >= 7/10
+- **Predefined queries**: Curated search queries for high-quality discovery
+- **CLI interface**: Easy-to-use command-line tool with multiple modes
+
+**Detailed Documentation**: [CURATOR_AGENT.md](CURATOR_AGENT.md)
+
+**Prerequisites:**
+- `GOOGLE_API_KEY` configured in `.env` (for LLM filtering)
+- Git installed (for repository cloning)
+- Sufficient disk space (repositories can be 100MB - 1GB+)
+
+**Note**: Web search currently uses example data. For production use, integrate with a search API (Google Custom Search, Serper.dev, Tavily, etc.). See [CURATOR_AGENT.md](CURATOR_AGENT.md) for integration steps.
+
 ## Development Roadmap
 
 ### Phase 1: The "Librarian" (Knowledge Base)
@@ -486,7 +551,43 @@ Refining Design Based on Feedback...
 - Design versioning and history tracking
 - Export designs to markdown files
 
-### Phase 7: The "Future" (Advanced Automation)
+### Phase 7: The "Curator" (Automated Codebase Discovery) COMPLETED
+
+**Phase 1 - Discovery & Filtering (Curator Agent):**
+- LangGraph workflow for automated repository discovery
+- Web search integration for finding high-quality codebases
+- LLM-powered filtering and quality assessment (1-10 scoring)
+- Structured output with Pydantic models for validation
+- Automatic categorization (frontend/backend/fullstack)
+- Domain-specific brain collections (frontend_brain, backend_brain)
+- CLI interface with discovery-only and full ingestion modes
+- Predefined search queries for each domain
+- LLM-generated custom query support
+
+**Phase 2 - Orchestrated Ingestion (Dispatcher) COMPLETED:**
+- Refactored `ingest_expert.py` into callable functions with structured returns
+- Created `ingestion_dispatcher.py` for clean batch ingestion API
+- Updated curator_graph to use direct function calls (no subprocess overhead)
+- Automatic expert type detection from collection names
+- Detailed metrics tracking (files, chunks, vectors)
+- Python API for programmatic repository ingestion
+
+**Documentation**: See [CURATOR_AGENT.md](CURATOR_AGENT.md) for detailed usage guide and API reference.
+
+**Quick Start**:
+```bash
+# Discovery only (recommended first run)
+python curator.py --discover-only
+
+# Full workflow with ingestion
+python curator.py --domains frontend backend
+
+# Programmatic ingestion (Python API)
+python -c "from src.ingestion_dispatcher import dispatch_ingestion; \
+  result = dispatch_ingestion('https://github.com/shadcn-ui/ui', 'frontend_brain')"
+```
+
+### Phase 8: The "Future" (Advanced Automation)
 - Automatic email sending with confirmation
 - Task management integration (Todoist, Asana, etc.)
 - Calendar event creation and modification

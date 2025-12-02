@@ -16,6 +16,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import List, Set, Optional
+import traceback
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -294,7 +295,7 @@ def show_recommended_repos(expert_type: str):
     print(f" python src/ingest_expert.py --expert {expert_type} --path /local/repo")
     print("=" * 70)
 
-def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None, repo_url: Optional[str] = None, collection_name: Optional[str] = None):
+def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None, repo_url: Optional[str] = None, collection_name: Optional[str] = None, verbose: bool = True):
     """
     Main ingestion pipeline for expert knowledge.
 
@@ -303,19 +304,45 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
         source_path: Local path to codebase (optional)
         repo_url: Git repository URL to clone (optional)
         collection_name: Custom collection name (optional)
+        verbose: Whether to print progress messages (default: True)
+
+    Returns:
+        Dict with ingestion results:
+        {
+            'success': bool,
+            'expert_type': str,
+            'collection': str,
+            'repo_url': str or None,
+            'files_processed': int,
+            'chunks_created': int,
+            'vectors_stored': int,
+            'error': str or None
+        }
     """
     # Validate expert type
     if expert_type not in EXPERT_TEMPLATES:
-        print(f"Unknown expert type: {expert_type}")
-        print(f"Available types: {', '.join(EXPERT_TEMPLATES.keys())}")
-        return
+        error_msg = f"Unknown expert type: {expert_type}"
+        if verbose:
+            print(error_msg)
+            print(f"Available types: {', '.join(EXPERT_TEMPLATES.keys())}")
+        return {
+            'success': False,
+            'expert_type': expert_type,
+            'collection': None,
+            'repo_url': repo_url,
+            'files_processed': 0,
+            'chunks_created': 0,
+            'vectors_stored': 0,
+            'error': error_msg
+        }
     
     expert = EXPERT_TEMPLATES[expert_type]
     collection = collection_name or expert['collection']
 
-    print("\n", "=" * 70)
-    print(f"Expert Knowledge Ingestion: {expert['name']}")
-    print("=" * 70)
+    if verbose:
+        print("\n", "=" * 70)
+        print(f"Expert Knowledge Ingestion: {expert['name']}")
+        print("=" * 70)
 
     # Determine source directory
     temp_dir = None
@@ -323,71 +350,171 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
         # Clone repository to temp directory
         temp_dir = tempfile.mkdtemp(prefix=f"{expert_type}_repo_")
         source_path = Path(temp_dir)
-    
+
         if not clone_repository(repo_url, source_path):
             shutil.rmtree(temp_dir, ignore_errors=True)
-            return
+            return {
+                'success': False,
+                'expert_type': expert_type,
+                'collection': collection,
+                'repo_url': repo_url,
+                'files_processed': 0,
+                'chunks_created': 0,
+                'vectors_stored': 0,
+                'error': 'Failed to clone repository'
+            }
 
     elif source_path:
         source_path = Path(source_path)
         if not source_path.exists():
-            print(f"Error: Path does not exist: {source_path}")
-            return
+            error_msg = f"Path does not exist: {source_path}"
+            if verbose:
+                print(f"Error: {error_msg}")
+            return {
+                'success': False,
+                'expert_type': expert_type,
+                'collection': collection,
+                'repo_url': repo_url,
+                'files_processed': 0,
+                'chunks_created': 0,
+                'vectors_stored': 0,
+                'error': error_msg
+            }
         if not source_path.is_dir():
-            print(f"Error: Path is not a directory: {source_path}")
-            return
+            error_msg = f"Path is not a directory: {source_path}"
+            if verbose:
+                print(f"Error: {error_msg}")
+            return {
+                'success': False,
+                'expert_type': expert_type,
+                'collection': collection,
+                'repo_url': repo_url,
+                'files_processed': 0,
+                'chunks_created': 0,
+                'vectors_stored': 0,
+                'error': error_msg
+            }
 
     else:
-        print("Error: Must provide either --repo or --path")
-        return
+        error_msg = "Must provide either repo_url or source_path"
+        if verbose:
+            print(f"Error: {error_msg}")
+        return {
+            'success': False,
+            'expert_type': expert_type,
+            'collection': collection,
+            'repo_url': repo_url,
+            'files_processed': 0,
+            'chunks_created': 0,
+            'vectors_stored': 0,
+            'error': error_msg
+        }
     
     try:
         # Step 1: Find code files
-        print(f"\nScanning directory: {source_path}")
-        print(f"Looking for: {', '.join(expert['file_extensions'])}")
+        if verbose:
+            print(f"\nScanning directory: {source_path}")
+            print(f"Looking for: {', '.join(expert['file_extensions'])}")
 
         code_files = find_code_files(source_path, expert['file_extensions'], expert['exclude_patterns'])
 
         if not code_files:
-            print("No code files found matching criteria")
-            return
-    
-        print(f"Found {len(code_files)} code file(s)\n")
+            error_msg = "No code files found matching criteria"
+            if verbose:
+                print(error_msg)
+            return {
+                'success': False,
+                'expert_type': expert_type,
+                'collection': collection,
+                'repo_url': repo_url,
+                'files_processed': 0,
+                'chunks_created': 0,
+                'vectors_stored': 0,
+                'error': error_msg
+            }
+
+        if verbose:
+            print(f"Found {len(code_files)} code file(s)\n")
 
         # Step 2: Load documents
-        print("Loading code files")
+        if verbose:
+            print("Loading code files")
         documents = load_code_documents(code_files, expert_type)
-        print(f"Successfully loaded {len(documents)} file(s)\n")
+        if verbose:
+            print(f"Successfully loaded {len(documents)} file(s)\n")
 
         if not documents:
-            print("No files were successfully loaded")
-            return
+            error_msg = "No files were successfully loaded"
+            if verbose:
+                print(error_msg)
+            return {
+                'success': False,
+                'expert_type': expert_type,
+                'collection': collection,
+                'repo_url': repo_url,
+                'files_processed': 0,
+                'chunks_created': 0,
+                'vectors_stored': 0,
+                'error': error_msg
+            }
 
         # Step 3: Chunk documents
-        print("Chunking code (language-aware)...")
+        if verbose:
+            print("Chunking code (language-aware)...")
         chunks = chunk_code_documents(documents)
-        print(f"Created {len(chunks)} total chunks\n")
+        if verbose:
+            print(f"Created {len(chunks)} total chunks\n")
 
-        # Step 4:Ingest to expert brain
+        # Step 4: Ingest to expert brain
         vectorstore = ingest_to_expert_brain(chunks, collection)
+        vectors_stored = vectorstore._collection.count()
 
         # Summary
-        print("=" * 70)
-        print("Expert Knowledge Ingestion Complete")
-        print("=" * 70)
-        print(f"Expert Domain:      {expert['name']}")
-        print(f"Files Processed:   {len(documents)}")
-        print(f"Chunks created:     {len(chunks)}")
-        print(f"Collection Name:    {collection}")
-        print(f"ChromaDB location:  {CHROMA_DB_DIR}")
-        print(f"Vectors Stored:     {vectorstore._collection.count()}")
-        print("\n This expert brain is now ready for specialized agent usage")
-        print("=" * 70)
+        if verbose:
+            print("=" * 70)
+            print("Expert Knowledge Ingestion Complete")
+            print("=" * 70)
+            print(f"Expert Domain:      {expert['name']}")
+            print(f"Files Processed:   {len(documents)}")
+            print(f"Chunks created:     {len(chunks)}")
+            print(f"Collection Name:    {collection}")
+            print(f"ChromaDB location:  {CHROMA_DB_DIR}")
+            print(f"Vectors Stored:     {vectors_stored}")
+            print("\n This expert brain is now ready for specialized agent usage")
+            print("=" * 70)
+
+        return {
+            'success': True,
+            'expert_type': expert_type,
+            'collection': collection,
+            'repo_url': repo_url,
+            'files_processed': len(documents),
+            'chunks_created': len(chunks),
+            'vectors_stored': vectors_stored,
+            'error': None
+        }
+
+    except Exception as e:
+        error_msg = f"Ingestion failed: {str(e)}"
+        if verbose:
+            print(f"\nError: {error_msg}")
+            traceback.print_exc()
+        return {
+            'success': False,
+            'expert_type': expert_type,
+            'collection': collection,
+            'repo_url': repo_url,
+            'files_processed': 0,
+            'chunks_created': 0,
+            'vectors_stored': 0,
+            'error': error_msg
+        }
 
     finally:
         # Cleanup temp directory if created
         if temp_dir:
-            print("\nCleaning up temporary directory...")
+            if verbose:
+                print("\nCleaning up temporary directory...")
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 
@@ -418,7 +545,7 @@ def main():
     )
 
     parser.add_argument("--expert", type=str, required=True, choices=list(EXPERT_TEMPLATES.keys()), help="Type of expert knowledge to ingest")
-    
+
     parser.add_argument("--repo", type=str, help="Git repository URL to clone and ingest")
 
     parser.add_argument("--path", type=str, help="Local path to codebase directory")

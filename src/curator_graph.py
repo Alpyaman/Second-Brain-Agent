@@ -1,7 +1,8 @@
 """
 Curator Agent LangGraph Workflow
 
-This module implements the Curator Agent using LangGraph. The agent automatically discovers, filters, and ingests high-quality codebases into specialized brain collections.
+This module implements the Curator Agent using LangGraph. The agent automatically
+discovers, filters, and ingests high-quality codebases into specialized brain collections.
 
 Workflow:
 1. Generate Search Queries: Create targeted queries for each domain
@@ -11,9 +12,7 @@ Workflow:
 """
 
 import os
-import subprocess
 from typing import Dict, List, Any
-from pathlib import Path
 import traceback
 
 from langgraph.graph import StateGraph, END
@@ -23,6 +22,7 @@ from dotenv import load_dotenv
 
 from curator_state import CuratorState
 from curator_models import SearchQueryBatch, CuratorFilterResult
+from ingestion_dispatcher import dispatch_batch_ingestion
 
 load_dotenv()
 
@@ -116,17 +116,17 @@ def generate_search_queries(state: CuratorState) -> Dict[str, Any]:
 
             prompt = ChatPromptTemplate.from_messages([
                 ("system", """You are an expert at crafting search queries to find high-quality code repositories on GitHub.
-                    Generate search queries that will discover:
-                    - Production-ready boilerplates and templates
-                    - Well-maintained projects with good documentation
-                    - Popular frameworks and best practices examples
-                    - Repositories with significant community engagement (stars, forks)
+                Generate search queries that will discover:
+                - Production-ready boilerplates and templates
+                - Well-maintained projects with good documentation
+                - Popular frameworks and best practices examples
+                - Repositories with significant community engagement (stars, forks)
 
-                    Each query should:
-                    1. Target specific frameworks or technologies
-                    2. Include quality indicators (stars:>500, etc.)
-                    3. Use site:github.com to restrict to GitHub
-                    4. Focus on templates, boilerplates, and examples"""),
+                Each query should:
+                1. Target specific frameworks or technologies
+                2. Include quality indicators (stars:>500, etc.)
+                3. Use site:github.com to restrict to GitHub
+                4. Focus on templates, boilerplates, and examples"""),
                 ("user", "Generate 5 high-quality search queries for the following domains: {domains}")
             ])
 
@@ -134,7 +134,14 @@ def generate_search_queries(state: CuratorState) -> Dict[str, Any]:
 
             result = chain.invoke({"domains": ", ".join(domains)})
 
-            queries = [{"query": q.query, "domain": q.domain, "description": q.description} for q in result.queries]
+            queries = [
+                {
+                    "query": q.query,
+                    "domain": q.domain,
+                    "description": q.description,
+                }
+                for q in result.queries
+            ]
 
             print(f"LLM generated {len(queries)} custom queries")
 
@@ -142,18 +149,30 @@ def generate_search_queries(state: CuratorState) -> Dict[str, Any]:
         if custom_queries:
             print(f"Adding {len(custom_queries)} custom user queries")
             for query in custom_queries:
-                queries.append({"query": query, "domain": "unknown", "description": "User-provided query",})
+                queries.append({
+                    "query": query,
+                    "domain": "unknown",
+                    "description": "User-provided query",
+                })
 
         # Display generated queries
         print("\nSearch Queries:")
         for i, q in enumerate(queries, 1):
             print(f"  {i}. [{q['domain']}] {q['query']}")
 
-        return {**state, "search_queries": queries, "status": "queries_generated"}
+        return {
+            **state,
+            "search_queries": queries,
+            "status": "queries_generated",
+        }
 
     except Exception as e:
         print(f"Error generating queries: {e}")
-        return {**state, "status": "error", "error": f"Query generation failed: {str(e)}"}
+        return {
+            **state,
+            "status": "error",
+            "error": f"Query generation failed: {str(e)}",
+        }
 
 
 def execute_web_searches(state: CuratorState) -> Dict[str, Any]:
@@ -316,8 +335,10 @@ def filter_and_categorize(state: CuratorState) -> Dict[str, Any]:
             Quality threshold for approval: >= 7/10
             Only approve repositories that are templates, boilerplates, or excellent examples."""),
             ("user", """Analyze these search results and filter/categorize them:
-            {results}
-            Return a structured assessment for each result.""")
+
+{results}
+
+Return a structured assessment for each result.""")
         ])
 
         chain = prompt | structured_llm
@@ -388,10 +409,13 @@ def ingest_approved_repositories(state: CuratorState) -> Dict[str, Any]:
     """
     Node 4: Ingest approved repositories into appropriate brain collections.
 
+    Uses the Ingestion Dispatcher to directly call the ingestion functions
+    instead of spawning subprocess calls to the CLI script.
+
     For each approved repository:
-    1. Extract the GitHub URL
-    2. Determine the target collection
-    3. Call the existing ingest_expert.py module to clone and ingest
+    1. Extract the GitHub URL and target collection
+    2. Call dispatch_batch_ingestion() to clone and ingest
+    3. Collect structured results
 
     Args:
         state: Current curator state
@@ -414,99 +438,36 @@ def ingest_approved_repositories(state: CuratorState) -> Dict[str, Any]:
                 "status": "completed",
             }
 
-        ingestion_results = []
-
         print(f"Starting ingestion for {len(approved_repos)} repositories...\n")
 
-        # Get the path to ingest_expert.py
-        current_dir = Path(__file__).parent
-        ingest_script = current_dir / "ingest_expert.py"
+        # Prepare batch ingestion data
+        repositories = [
+            {
+                'url': repo['url'],
+                'target_collection': repo['target_collection'],
+                'expert_type': None,  # Auto-detect from collection name
+            }
+            for repo in approved_repos
+        ]
 
-        if not ingest_script.exists():
-            raise FileNotFoundError(f"ingest_expert.py not found at {ingest_script}")
+        # Dispatch batch ingestion using the Ingestion Dispatcher
+        ingestion_results_raw = dispatch_batch_ingestion(
+            repositories=repositories,
+            verbose=True
+        )
 
-        for i, repo in enumerate(approved_repos, 1):
-            url = repo["url"]
-            collection = repo["target_collection"]
-            category = repo["category"]
-
-            print(f"\n[{i}/{len(approved_repos)}] Ingesting: {url}")
-            print(f"    Collection: {collection}")
-            print(f"    Category: {category}")
-
-            try:
-                # Map collection name to expert type for ingest_expert.py
-                expert_type_map = {
-                    "frontend_brain": "frontend",
-                    "backend_brain": "backend",
-                    "fullstack_brain": "fullstack",
-                }
-
-                expert_type = expert_type_map.get(collection)
-
-                if not expert_type:
-                    print(f"    Unknown collection type: {collection}, skipping")
-                    ingestion_results.append({
-                        "url": url,
-                        "collection": collection,
-                        "status": "skipped",
-                        "message": f"Unknown collection type: {collection}",
-                    })
-                    continue
-
-                # Execute the ingestion script
-                cmd = [
-                    "python",
-                    str(ingest_script),
-                    "--expert", expert_type,
-                    "--repo", url,
-                    "--collection", collection,
-                ]
-
-                print(f"    Running: {' '.join(cmd)}")
-
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=300,  # 5 minute timeout
-                )
-
-                if result.returncode == 0:
-                    print(f"    Successfully ingested to {collection}")
-                    ingestion_results.append({
-                        "url": url,
-                        "collection": collection,
-                        "status": "success",
-                        "message": "Repository ingested successfully",
-                    })
-                else:
-                    print("    Ingestion failed")
-                    print(f"    Error: {result.stderr}")
-                    ingestion_results.append({
-                        "url": url,
-                        "collection": collection,
-                        "status": "failed",
-                        "message": result.stderr[:200],  # Truncate error message
-                    })
-
-            except subprocess.TimeoutExpired:
-                print("    Ingestion timed out")
-                ingestion_results.append({
-                    "url": url,
-                    "collection": collection,
-                    "status": "timeout",
-                    "message": "Ingestion timed out after 5 minutes",
-                })
-
-            except Exception as e:
-                print(f"    Error: {str(e)}")
-                ingestion_results.append({
-                    "url": url,
-                    "collection": collection,
-                    "status": "error",
-                    "message": str(e),
-                })
+        # Convert to state format
+        ingestion_results = []
+        for result in ingestion_results_raw:
+            ingestion_results.append({
+                "url": result['repo_url'],
+                "collection": result['collection'],
+                "status": "success" if result['success'] else "failed",
+                "message": result['error'] if result['error'] else f"Ingested {result['vectors_stored']} vectors",
+                "files_processed": result['files_processed'],
+                "chunks_created": result['chunks_created'],
+                "vectors_stored": result['vectors_stored'],
+            })
 
         # Summary
         print("\n" + "=" * 70)
@@ -519,6 +480,10 @@ def ingest_approved_repositories(state: CuratorState) -> Dict[str, Any]:
         print(f"Total repositories processed: {len(ingestion_results)}")
         print(f"Successful ingestions: {success_count}")
         print(f"Failed ingestions: {failed_count}")
+
+        if success_count > 0:
+            total_vectors = sum(r['vectors_stored'] for r in ingestion_results if r['status'] == 'success')
+            print(f"Total vectors stored: {total_vectors}")
 
         return {
             **state,
@@ -593,7 +558,7 @@ def run_curator_agent(
     print(f"Domains: {', '.join(domains)}")
     print(f"Max results per query: {max_results_per_query}")
     if skip_ingestion:
-        print("Ingestion DISABLED (discovery only)")
+        print("⚠️  Ingestion DISABLED (discovery only)")
     print("=" * 70)
 
     # Initialize state
