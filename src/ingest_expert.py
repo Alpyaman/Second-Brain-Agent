@@ -8,6 +8,8 @@ knowledge bases for different engineering domains:
 - Backend Brain: FastAPI, Django, API patterns, database schemas
 
 This enables each agent in the multi-agent system to have domain-specific expertise.
+
+Phase 3: Includes commit hash tracking and update detection for maintenance.
 """
 
 import argparse
@@ -16,7 +18,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import List, Set, Optional
-import traceback
+from datetime import datetime
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -93,6 +95,30 @@ EXPERT_TEMPLATES = {
         "exclude_patterns": {"node_modules", ".next", "venv", ".venv", "dist", "build", ".git", "__pycache__"}
     }
 }
+
+def get_repository_commit_hash(repo_path: Path) -> Optional[str]:
+    """
+    Get the latest commit hash from a cloned repository.
+
+    Args:
+        repo_path: Path to the cloned repository
+
+    Returns:
+        Commit hash string or None if failed
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Could not get commit hash: {e}")
+        return None
+
 
 def clone_repository(repo_url: str, target_dir: Path) -> bool:
     """
@@ -171,33 +197,44 @@ def determine_language_splitter(file_extension: str) -> Optional[Language]:
 
     return extension_map.get(file_extension)
 
-def load_code_documents(file_paths: List[Path], expert_type: str) -> List[Document]:
+def load_code_documents(file_paths: List[Path], expert_type: str, repo_url: Optional[str] = None, commit_hash: Optional[str] = None) -> List[Document]:
     """
     Load code files and create Document objects with metadata.
 
     Args:
         file_paths: List of code file paths to load
         expert_type: Type of expert
+        repo_url: Optional GitHub repository URL (for tracking)
+        commit_hash: Optional commit hash (for update detection)
 
     Returns:
         List of Document objects with code content and metadata.
     """
     documents = []
+    ingestion_date = datetime.now().isoformat()
 
     for file_path in file_paths:
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
-            
+
             # Create document with metadata
-            doc = Document(page_content=content, metadata={
-                    "source": str(file_path),
-                    "filename": file_path.name,
-                    "file_type": file_path.suffix,
-                    "expert_domain": expert_type,
-                    "relative_path": str(file_path)
-                }
-            )
+            metadata = {
+                "source": str(file_path),
+                "filename": file_path.name,
+                "file_type": file_path.suffix,
+                "expert_domain": expert_type,
+                "relative_path": str(file_path),
+                "ingestion_date": ingestion_date,
+            }
+
+            # Add repository tracking metadata if provided
+            if repo_url:
+                metadata["repo_url"] = repo_url
+            if commit_hash:
+                metadata["commit_hash"] = commit_hash
+
+            doc = Document(page_content=content, metadata=metadata)
             documents.append(doc)
 
             # Print progress
@@ -411,6 +448,13 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
         }
     
     try:
+        # Step 0: Get commit hash for tracking (Phase 3: Maintenance)
+        commit_hash = None
+        if repo_url and source_path:
+            commit_hash = get_repository_commit_hash(source_path)
+            if commit_hash and verbose:
+                print(f"Repository commit hash: {commit_hash[:8]}...")
+
         # Step 1: Find code files
         if verbose:
             print(f"\nScanning directory: {source_path}")
@@ -427,6 +471,7 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
                 'expert_type': expert_type,
                 'collection': collection,
                 'repo_url': repo_url,
+                'commit_hash': commit_hash,
                 'files_processed': 0,
                 'chunks_created': 0,
                 'vectors_stored': 0,
@@ -436,10 +481,10 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
         if verbose:
             print(f"Found {len(code_files)} code file(s)\n")
 
-        # Step 2: Load documents
+        # Step 2: Load documents with metadata (Phase 3: includes commit hash)
         if verbose:
             print("Loading code files")
-        documents = load_code_documents(code_files, expert_type)
+        documents = load_code_documents(code_files, expert_type, repo_url=repo_url, commit_hash=commit_hash)
         if verbose:
             print(f"Successfully loaded {len(documents)} file(s)\n")
 
@@ -488,6 +533,7 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
             'expert_type': expert_type,
             'collection': collection,
             'repo_url': repo_url,
+            'commit_hash': commit_hash,
             'files_processed': len(documents),
             'chunks_created': len(chunks),
             'vectors_stored': vectors_stored,
@@ -498,12 +544,14 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
         error_msg = f"Ingestion failed: {str(e)}"
         if verbose:
             print(f"\nError: {error_msg}")
+            import traceback
             traceback.print_exc()
         return {
             'success': False,
             'expert_type': expert_type,
             'collection': collection,
             'repo_url': repo_url,
+            'commit_hash': None,
             'files_processed': 0,
             'chunks_created': 0,
             'vectors_stored': 0,
