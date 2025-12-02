@@ -19,6 +19,7 @@ from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
+from langchain_tavily import TavilySearchResults
 
 from src.agents.curator.state import CuratorState
 from src.agents.curator.models import SearchQueryBatch, CuratorFilterResult
@@ -207,41 +208,25 @@ def execute_web_searches(state: CuratorState) -> Dict[str, Any]:
         print("    (Google Custom Search, Serper, Tavily, etc.)")
         print("\n    For now, using example results from your provided data...\n")
 
-        # Example results based on the user's provided data
-        example_results = [
-            {
-                "title": "A highly-starred Next.js 14 Boilerplate - GitHub",
-                "snippet": "Our Next.js 14 boilerplate with full-stack TypeScript, Prisma, and Tailwind CSS. Over 5k stars.",
-                "source_url": "https://github.com/user/nextjs-14-boilerplate",
-                "query_domain": "frontend",
-            },
-            {
-                "title": "Awesome Next.js - A curated list",
-                "snippet": "A comprehensive list of resources, libraries, and tools for Next.js.",
-                "source_url": "https://github.com/unicodeveloper/awesome-nextjs",
-                "query_domain": "frontend",
-            },
-            {
-                "title": "FastAPI-Template: Modern Python Project - GitHub",
-                "snippet": "A modern FastAPI template with PostgreSQL, Docker, and full CI/CD. The best way to start a new Python backend project.",
-                "source_url": "https://github.com/tiangolo/fastapi-template",
-                "query_domain": "backend",
-            },
-            {
-                "title": "shadcn/ui - GitHub",
-                "snippet": "Beautifully designed components that you can copy and paste into your apps. Built with Radix UI and Tailwind CSS.",
-                "source_url": "https://github.com/shadcn-ui/ui",
-                "query_domain": "frontend",
-            },
-            {
-                "title": "FastAPI Best Practices - GitHub",
-                "snippet": "Best practices for FastAPI development, covering project structure, error handling, and testing.",
-                "source_url": "https://github.com/zhanymkanov/fastapi-best-practices",
-                "query_domain": "backend",
-            },
-        ]
+        tavily = TavilySearchResults(max_results=5)
+        all_results = []
 
-        all_results.extend(example_results)
+        for query_obj in search_queries:
+            print(f"Searching: {query_obj['query']}")
+            try:
+                # Execute real search
+                results = tavily.invoke(query_obj['query'])
+
+                # Normalize results
+                for r in results:
+                    all_results.append({
+                        "title": r.get("content", "")[:50] + "...", # Tavily puts title in content sometimes
+                        "snippet": r.get("content", ""),
+                        "source_url": r.get("url"),
+                        "query_domain": query_obj["domain"]
+                    })
+            except Exception as e:
+                print(f"Search failed for {query_obj["query"]}: {e}")
 
         print(f"Collected {len(all_results)} search results")
         print("\nSearch Results:")
