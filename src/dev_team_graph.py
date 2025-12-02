@@ -9,12 +9,13 @@ This is NOT "just wrapping an LLM" - each agent learns from different codebases.
 """
 
 import os
-
+from typing import List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langgraph.graph import StateGraph, END
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field
 
 from dev_team_state import DevTeamState
 from config import EMBEDDING_MODEL, CHROMA_DB_DIR
@@ -24,6 +25,23 @@ load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
 
+# ============================================================================
+# PYDANTIC MODELS FOR STRUCTURED OUTPUT
+# ============================================================================
+
+class TechLeadDecomposition(BaseModel):
+    """
+    Structured output from Tech Lead for feature decomposition.
+
+    This ensures Gemini always returns valid structured data, preventing
+    parsing failures from markdown formatting or preamble text.
+    """
+
+    frontend_tasks: List[str] = Field(description="List of specific frontend work items (UI, components, client-side logic)")
+
+    backend_tasks: List[str] = Field(description="List of specific backend work items (API endpoints, database, business logic)")
+
+    architecture_notes: str = Field(description="High-level description of how frontend and backend integrate")
 
 # ============================================================================
 # UTILITY FUNCTIONS
@@ -93,7 +111,7 @@ def tech_lead_dispatcher(state: DevTeamState) -> DevTeamState:
     - Backend tasks (API endpoints, database, business logic)
     - Architecture notes (how components integrate)
 
-    This is the "orchestrator" that enables specialization.
+    Uses Pydantic structured output to ensure reliable parsing.
     """
     print("\n" + "=" * 70)
     print("TECH LEAD: Analyzing Feature Request")
@@ -113,61 +131,37 @@ def tech_lead_dispatcher(state: DevTeamState) -> DevTeamState:
         2. Identify what needs to be built on the backend (APIs, database, business logic)
         3. Describe how they integrate (architecture notes)
 
-        Be specific and actionable. Each task should be clear enough for a specialist to implement independently."""
+        Be specific and actionable. Each task should be clear enough for a specialist to implement independently.
+
+        Return your analysis as structured JSON with:
+        - frontend_tasks: array of frontend work items
+        - backend_tasks: array of backend work items
+        - architecture_notes: string describing integration"""
 
     user_prompt = f"""Feature Request: {state['feature_request']}
-        Please decompose this into:
-        1. Frontend Tasks: List of specific frontend work items
-        2. Backend Tasks: List of specific backend work items
-        3. Architecture Notes: How the frontend and backend integrate
+        Decompose this feature into frontend tasks, backend tasks, and architecture notes."""
 
-        Format your response as:
-        FRONTEND_TASKS:
-        - Task 1
-        - Task 2
-
-        BACKEND_TASKS:
-        - Task 1
-        - Task 2
-
-        ARCHITECTURE:
-        High-level integration notes
-    """
-
-    # Generate decomposition
+    # Use structured output with Pydantic model
     llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.3)
-    response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
-    decomposition = response.content
+    structured_llm = llm.with_structured_output(TechLeadDecomposition)
 
-    # Parse response (simple parsing - can be improved)
-    frontend_tasks = []
-    backend_tasks = []
-    architecture_notes = ""
+    # Generate decomposition with guaranteed structure
+    try:
+        decomposition = structured_llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
-    lines = decomposition.split('\n')
-    current_section = None
+        # Update state with structured data
+        state['frontend_tasks'] = decomposition.frontend_tasks if decomposition.frontend_tasks else ["Implement frontend for: " + state['feature_request']]
 
-    for line in lines:
-        line = line.strip()
-        if 'FRONTEND_TASKS' in line.upper():
-            current_section = 'frontend'
-        elif 'BACKEND_TASKS' in line.upper():
-            current_section = 'backend'
-        elif 'ARCHITECTURE' in line.upper():
-            current_section = 'architecture'
-        elif line.startswith('-') or line.startswith('*'):
-            task = line.lstrip('-*').strip()
-            if current_section == 'frontend':
-                frontend_tasks.append(task)
-            elif current_section == 'backend':
-                backend_tasks.append(task)
-        elif current_section == 'architecture' and line:
-            architecture_notes += line + "\n"
+        state['backend_tasks'] = decomposition.backend_tasks if decomposition.backend_tasks else ["Implement backend for: " + state['feature_request']]
 
-    # Update state
-    state['frontend_tasks'] = frontend_tasks if frontend_tasks else ["Implement frontend for: " + state['feature_request']]
-    state['backend_tasks'] = backend_tasks if backend_tasks else ["Implement backend for: " + state['feature_request']]
-    state['architecture_notes'] = architecture_notes or "Frontend calls backend APIs."
+        state['architecture_notes'] = decomposition.architecture_notes or "Frontend calls backend APIs."
+
+    except Exception as e:
+        # Fallback in case of any issues
+        print(f"Warning: Structured output failed ({e}). Using fallback.")
+        state['frontend_tasks'] = ["Implement frontend for: " + state['feature_request']]
+        state['backend_tasks'] = ["Implement backend for: " + state['feature_request']]
+        state['architecture_notes'] = "Frontend calls backend APIs."
 
     state['frontend_status'] = 'pending'
     state['backend_status'] = 'pending'
