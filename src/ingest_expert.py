@@ -70,7 +70,7 @@ EXPERT_TEMPLATES = {
                 "description": "Django REST patterns"
             }
         ],
-        "file_enxtensions": [".py"],
+        "file_extensions": [".py"],
         "exclude_patterns": {"venv", ".venv", "__pycache__", ".git", "node_modules", "dist", "build"}
     },
     "fullstack": {
@@ -417,8 +417,8 @@ def main():
         """
     )
 
-    parser.add_argument(type=str, required=True, choices=list(EXPERT_TEMPLATES.keys()), help="Type of expert knowledge to ingest")
-
+    parser.add_argument("--expert", type=str, required=True, choices=list(EXPERT_TEMPLATES.keys()), help="Type of expert knowledge to ingest")
+    
     parser.add_argument("--repo", type=str, help="Git repository URL to clone and ingest")
 
     parser.add_argument("--path", type=str, help="Local path to codebase directory")
