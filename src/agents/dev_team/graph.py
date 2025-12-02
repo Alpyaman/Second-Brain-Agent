@@ -17,8 +17,8 @@ from langgraph.graph import StateGraph, END
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-from dev_team_state import DevTeamState
-from config import EMBEDDING_MODEL, CHROMA_DB_DIR
+from src.agents.dev_team.state import DevTeamState
+from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR
 
 load_dotenv()
 

@@ -25,7 +25,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
-from config import CHROMA_DB_DIR, EMBEDDING_MODEL
+from src.core.config import CHROMA_DB_DIR, EMBEDDING_MODEL
 
 
 # Expert Templates: Curated repos for each domain

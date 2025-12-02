@@ -7,7 +7,7 @@ awareness with knowledge base context to provide intelligent daily briefings.
 
 import sys
 from pathlib import Path
-from graph import create_agent_graph
+from src.agents.chief_of_staff.graph import create_agent_graph
 import traceback
 
 # Add src to path for imports

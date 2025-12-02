@@ -15,7 +15,7 @@ import os
 import argparse
 import sys
 from pathlib import Path
-from src.architect_graph import run_architect_session
+from src.agents.architect.graph import run_architect_session
 from dotenv import load_dotenv
 
 load_dotenv()

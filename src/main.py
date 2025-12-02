@@ -9,7 +9,7 @@ import sys
 import argparse
 import traceback
 
-from graph import create_agent_graph
+from src.agents.chief_of_staff.graph import create_agent_graph
 from tools.gmail import list_drafts
 
 

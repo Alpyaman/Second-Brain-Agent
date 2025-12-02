@@ -34,7 +34,7 @@ Examples:
 import argparse
 import sys
 import traceback
-from src.curator_graph import run_curator_agent
+from src.agents.curator.graph import run_curator_agent
 
 
 def main():

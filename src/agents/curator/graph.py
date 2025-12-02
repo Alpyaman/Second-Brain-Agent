@@ -20,9 +20,9 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 
-from curator_state import CuratorState
-from curator_models import SearchQueryBatch, CuratorFilterResult
-from ingestion_dispatcher import dispatch_batch_ingestion
+from src.agents.curator.state import CuratorState
+from src.agents.curator.models import SearchQueryBatch, CuratorFilterResult
+from src.ingestion.dispatcher import dispatch_batch_ingestion
 
 load_dotenv()
 

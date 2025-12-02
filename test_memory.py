@@ -6,7 +6,7 @@ that are automatically injected into all queries.
 """
 
 from src.tools.memory import (save_preference, list_preferences, get_all_preferences, clear_preferences)
-from src.brain import query_second_brain
+from src.core.brain import query_second_brain
 
 def main():
     print("=" * 70)

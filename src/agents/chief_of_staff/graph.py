@@ -14,10 +14,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import StateGraph, END
 
-from state import AgentState
+from src.agents.chief_of_staff.state import AgentState
 from tools.google_calendar import get_todays_event
 from tools.gmail import create_draft_email
-from brain import query_second_brain
+from src.core.brain import query_second_brain
 from dotenv import load_dotenv
 
 load_dotenv()

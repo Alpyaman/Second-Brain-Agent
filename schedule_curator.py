@@ -35,7 +35,7 @@ from pathlib import Path
 from datetime import datetime
 import json
 
-from src.curator_graph import run_curator_agent
+from src.agents.curator.graph import run_curator_agent
 
 
 def log_message(message: str, log_file: Path = None):

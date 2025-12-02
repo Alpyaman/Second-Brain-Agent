@@ -9,7 +9,7 @@ import json
 import datetime
 from typing import Dict, List
 
-from config import DATA_DIR
+from src.core.config import DATA_DIR
 
 # Preferences storage path
 PREFERENCES_FILE = DATA_DIR / "preferences.json"

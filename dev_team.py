@@ -17,8 +17,8 @@ Usage:
 import argparse
 import traceback
 from pathlib import Path
-from src.dev_team_graph import run_dev_team
-from src.config import CHROMA_DB_DIR
+from src.agents.dev_team.graph import run_dev_team
+from src.core.config import CHROMA_DB_DIR
 
 
 def check_expert_brains():

@@ -15,8 +15,8 @@ from pathlib import Path
 import tempfile
 
 # Import the refactored ingestion function
-from ingest_expert import ingest_expert_knowledge, EXPERT_TEMPLATES, get_repository_commit_hash, clone_repository
-from repository_maintenance import get_repository_metadata, check_repository_needs_update, remove_repository_from_collection
+from src.ingestion.ingest_expert import ingest_expert_knowledge, EXPERT_TEMPLATES, get_repository_commit_hash, clone_repository
+from src.ingestion.maintenance import get_repository_metadata, check_repository_needs_update, remove_repository_from_collection
 
 
 
