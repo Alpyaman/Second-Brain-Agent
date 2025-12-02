@@ -11,12 +11,11 @@ This enables each agent in the multi-agent system to have domain-specific expert
 """
 
 import argparse
-import os
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Set, Optional
+from typing import List, Set, Optional
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -377,7 +376,7 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
         print("Expert Knowledge Ingestion Complete")
         print("=" * 70)
         print(f"Expert Domain:      {expert['name']}")
-        print(f"Files Processed:"   {len(documents)})
+        print(f"Files Processed:   {len(documents)}")
         print(f"Chunks created:     {len(chunks)}")
         print(f"Collection Name:    {collection}")
         print(f"ChromaDB location:  {CHROMA_DB_DIR}")
@@ -388,7 +387,7 @@ def ingest_expert_knowledge(expert_type: str, source_path: Optional[Path] = None
     finally:
         # Cleanup temp directory if created
         if temp_dir:
-            print(f"\nCleaning up temporary directory...")
+            print("\nCleaning up temporary directory...")
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 
