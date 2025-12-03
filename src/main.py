@@ -83,8 +83,11 @@ def query_brain(collection_name: str, query: str, k: int = 5) -> str:
     from langchain_core.output_parsers import StrOutputParser
     from tools.memory import get_relevant_preferences
 
+    from src.ingestion.parent_child_code_parser import retrieve_with_parent_lookup
+
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "codellama")
+    USE_PARENT_CHILD = os.getenv("USE_PARENT_CHILD_RAG", "true").lower() == "true"
 
     print(f"\nQuerying brain: {collection_name}")
     print(f"Query: {query}\n")
@@ -116,7 +119,14 @@ def query_brain(collection_name: str, query: str, k: int = 5) -> str:
 
     # Perform similarity search
     print("Searching for relevant information...")
-    relevant_docs = vectorstore.similarity_search(query, k=k)
+
+    # Use parent-child retrieval for code brains if enabled
+    if USE_PARENT_CHILD and "brain" in collection_name and collection_name != "second_brain_notes":
+        print("Using Parent-Child-RAG (retrieving full context)...")
+        relevant_docs = retrieve_with_parent_lookup(query, collection_name, k=k)
+    else:
+        # Traditional retrieval for notes or when parent-child is disabled
+        relevant_docs = vectorstore.similarity_search(query, k=k)
 
     if not relevant_docs:
         return f"No relevant information found in '{collection_name}' for your query."
