@@ -16,7 +16,7 @@ from typing import Dict, List, Any
 import traceback
 
 from langgraph.graph import StateGraph, END
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from langchain_tavily import TavilySearch
@@ -28,8 +28,8 @@ from src.ingestion.dispatcher import dispatch_batch_ingestion
 load_dotenv()
 
 # Configuration
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
 
@@ -104,12 +104,9 @@ def generate_search_queries(state: CuratorState) -> Dict[str, Any]:
             # Use LLM to generate queries
             print("Using LLM to generate custom search queries...")
 
-            if not GOOGLE_API_KEY:
-                raise ValueError("GOOGLE_API_KEY not set. Cannot use LLM for query generation.")
-
-            llm = ChatGoogleGenerativeAI(
-                model=GEMINI_MODEL,
-                google_api_key=GOOGLE_API_KEY,
+            llm = ChatOllama(
+                model=OLLAMA_MODEL,
+                base_url=OLLAMA_BASE_URL,
                 temperature=0.7,
             )
 
@@ -303,14 +300,11 @@ def filter_and_categorize(state: CuratorState) -> Dict[str, Any]:
                 "status": "filtering_completed",
             }
 
-        if not GOOGLE_API_KEY:
-            raise ValueError("GOOGLE_API_KEY not set. Cannot use LLM for filtering.")
-
         print("Initializing LLM with structured output...")
 
-        llm = ChatGoogleGenerativeAI(
-            model=GEMINI_MODEL,
-            google_api_key=GOOGLE_API_KEY,
+        llm = ChatOllama(
+            model=OLLAMA_MODEL,
+            base_url=OLLAMA_BASE_URL,
             temperature=0.3,
         )
 

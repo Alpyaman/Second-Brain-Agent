@@ -10,7 +10,7 @@ This is NOT "just wrapping an LLM" - each agent learns from different codebases.
 
 import os
 from typing import List
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langgraph.graph import StateGraph, END
@@ -18,12 +18,12 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from src.agents.dev_team.state import DevTeamState
-from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR
+from core.confing import EMBEDDING_MODEL, CHROMA_DB_DIR
 
 load_dotenv()
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 # ============================================================================
 # PYDANTIC MODELS FOR STRUCTURED OUTPUT
@@ -142,7 +142,7 @@ def tech_lead_dispatcher(state: DevTeamState) -> DevTeamState:
         Decompose this feature into frontend tasks, backend tasks, and architecture notes."""
 
     # Use structured output with Pydantic model
-    llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.3)
+    llm = ChatOllama(model=OLLAMA_MODEL,base_url=OLLAMA_BASE_URL, temperature=0.3)
     structured_llm = llm.with_structured_output(TechLeadDecomposition)
 
     # Generate decomposition with guaranteed structure
@@ -239,7 +239,7 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
 
         Provide the complete implementation with file structure."""
 
-    llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.3)
+    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.3)
     response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
     state['frontend_code'] = response.content
@@ -309,7 +309,7 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
 
         Provide the complete implementation with file structure."""
 
-    llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.3)
+    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.3)
     response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
     state['backend_code'] = response.content
@@ -384,7 +384,7 @@ def integration_reviewer(state: DevTeamState) -> DevTeamState:
         STATUS: [pass/needs_revision/fail]
     """
 
-    llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.2)
+    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.2)
     response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
     review_content = response.content

@@ -7,21 +7,20 @@ retrieved context.
 """
 
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 
-from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR, COLLECTION_NAME
+from core.confing import EMBEDDING_MODEL, CHROMA_DB_DIR, COLLECTION_NAME
 from tools.memory import get_relevant_preferences
 
 load_dotenv()
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL")
-
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 def query_second_brain(query: str, k: int = 5) -> str:
     """
@@ -35,10 +34,6 @@ def query_second_brain(query: str, k: int = 5) -> str:
         A synthesized answer based on the retrieved notes, or a message indicating the
         informatin wasn't found in the notes.
     """
-    # Check if API key is set
-    if not GOOGLE_API_KEY:
-        return "Error: GOOGLE_API_KEY is not set."
-
     # Fetch user preferences for personalization
     print("Fetching user preferences...")
     preferences = get_relevant_preferences(query)
@@ -95,8 +90,8 @@ Guidelines:
     ])
 
     # Initialize Gemini Model
-    print(f"Initializing {GEMINI_MODEL}")
-    llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, google_api_key=GOOGLE_API_KEY, temperature=0.3)
+    print(f"Initializing {OLLAMA_MODEL}")
+    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.3)
 
     # Create chain
     chain = prompt_template | llm | StrOutputParser()

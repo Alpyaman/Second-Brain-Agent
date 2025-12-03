@@ -17,7 +17,7 @@ from pathlib import Path
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from src.core.config import CHROMA_DB_DIR, EMBEDDING_MODEL
+from core.config import CHROMA_DB_DIR, EMBEDDING_MODEL
 
 
 def get_repository_commit_hash(repo_path: Path) -> Optional[str]:

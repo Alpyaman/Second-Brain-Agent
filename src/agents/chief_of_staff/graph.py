@@ -9,7 +9,7 @@ import os
 import re
 from typing import Any, Dict
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import StateGraph, END
@@ -22,8 +22,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 def check_schedule(state: AgentState) -> Dict[str, Any]:
     """
@@ -237,11 +237,6 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
     relevant_notes = state.get("relevant_notes", "No relevant context found")
     user_query = state.get("user_query", "Give me my daily briefing")
 
-    if not GOOGLE_API_KEY:
-        error_msg = "Error: GOOGLE_API_KEY not set. Cannot generate briefing."
-        print(error_msg)
-        return {"daily_plan": error_msg}
-
     # Create the briefing prompt
     prompt_template = ChatPromptTemplate.from_messages([
         ("system", """You are an AI Chief of Staff assistant. Your role is to provide concise,
@@ -289,9 +284,9 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
     ])
 
     # Initialize Gemini
-    llm = ChatGoogleGenerativeAI(
-        model=GEMINI_MODEL,
-        google_api_key=GOOGLE_API_KEY,
+    llm = ChatOllama(
+        model=OLLAMA_MODEL,
+        base_url=OLLAMA_BASE_URL,
         temperature=0.7,
     )
 

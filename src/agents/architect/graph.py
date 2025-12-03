@@ -10,20 +10,20 @@ This module implements an interactive architectural design session that:
 
 import os
 from typing import Literal
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_ollama import ChatOllama
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langgraph.graph import StateGraph, END
 
 from src.agents.architect.state import ArchitectState
-from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR
+from core.confing import EMBEDDING_MODEL, CHROMA_DB_DIR
 from dotenv import load_dotenv
 from tools.memory import get_relevant_preferences
 
 load_dotenv()
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 def analyze_goal(state: ArchitectState) -> ArchitectState:
     """
@@ -175,7 +175,7 @@ def generate_design(state: ArchitectState) -> ArchitectState:
         Please refine the design based on my feedback."""
 
     # Initialize Gemini
-    llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, temperature=0.4)
+    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.4)
 
     # Generate the design
     messages = [("system", system_prompt), ("user", user_prompt)]
