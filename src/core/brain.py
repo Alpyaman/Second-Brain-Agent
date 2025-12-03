@@ -14,7 +14,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 
-from core.confing import EMBEDDING_MODEL, CHROMA_DB_DIR, COLLECTION_NAME
+from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR, COLLECTION_NAME
 from tools.memory import get_relevant_preferences
 
 load_dotenv()

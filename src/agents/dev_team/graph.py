@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from src.agents.dev_team.state import DevTeamState
-from core.confing import EMBEDDING_MODEL, CHROMA_DB_DIR
+from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR
 
 load_dotenv()
 
