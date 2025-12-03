@@ -202,12 +202,12 @@ def execute_web_searches(state: CuratorState) -> Dict[str, Any]:
         print(f"Executing {len(search_queries)} search queries...")
         print(f"Max results per query: {max_results}\n")
 
-        print("NOTE: Web search functionality requires integration with a search API")
-        print("    (Google Custom Search, Serper, Tavily, etc.)")
-        print("\n    For now, using example results from your provided data...\n")
+        if not TAVILY_API_KEY:
+            print("WARNING: TAVILY_API_KEY not set. Cannot execute searches.")
+            print("Please set TAVILY_API_KEY in your .env file to enable web search.\n")
+            return {**state, "raw_search_results": [], "status": "searches_completed",}
 
-        tavily = TavilySearch(max_results=5)
-        all_results = []
+        tavily = TavilySearch(max_results=max_results, api_key=TAVILY_API_KEY)
 
         for query_obj in search_queries:
             print(f"Searching: {query_obj['query']}")
@@ -215,14 +215,44 @@ def execute_web_searches(state: CuratorState) -> Dict[str, Any]:
                 # Execute real search
                 results = tavily.invoke(query_obj['query'])
 
-                # Normalize results
-                for r in results:
-                    all_results.append({
-                        "title": r.get("content", "")[:50] + "...", # Tavily puts title in content sometimes
-                        "snippet": r.get("content", ""),
-                        "source_url": r.get("url"),
-                        "query_domain": query_obj["domain"]
-                    })
+                # TavilySearch can return either a dict with 'results' key, a list, or a string
+                results_list = []
+
+                if isinstance(results, dict):
+                    # Extract results from dict - could be in 'results', 'data', or other keys
+                    if 'results' in results:
+                        results_list = results['results']
+                    elif 'data' in results:
+                        results_list = results['data']
+                    else:
+                        # Try to use the dict as a single result
+                        results_list = [results]
+                elif isinstance(results, list):
+                    results_list = results
+                elif isinstance(results, str):
+                    print("  Info: Search returned text result (not structured data)")
+                    continue
+                else:
+                    print(f"  Warning: Unexpected result type: {type(results)}")
+                    continue
+
+                # Process the results list
+                for r in results_list:
+                    if isinstance(r, dict):
+                        # Extract URL and content from result
+                        url = r.get("url", "") or r.get("link", "")
+                        content = r.get("content", "") or r.get("snippet", "") or r.get("description", "")
+
+                        if url:  # Only add if we have a URL
+                            all_results.append({
+                                "title": content[:100] + "..." if len(content) > 100 else content,
+                                "snippet": content,
+                                "source_url": url,
+                                "query_domain": query_obj["domain"]
+                            })
+                    else:
+                        print(f"  Warning: Result item is not a dict: {type(r)}")
+
             except Exception as e:
                 print(f"Search failed for {query_obj['query']}: {e}")
 
@@ -234,19 +264,11 @@ def execute_web_searches(state: CuratorState) -> Dict[str, Any]:
             print(f"     Domain: {result.get('query_domain', 'unknown')}")
             print()
 
-        return {
-            **state,
-            "raw_search_results": all_results,
-            "status": "searches_completed",
-        }
+        return {**state, "raw_search_results": all_results, "status": "searches_completed",}
 
     except Exception as e:
         print(f"Error executing searches: {e}")
-        return {
-            **state,
-            "status": "error",
-            "error": f"Search execution failed: {str(e)}",
-        }
+        return {**state, "status": "error", "error": f"Search execution failed: {str(e)}",}
 
 
 def filter_and_categorize(state: CuratorState) -> Dict[str, Any]:
