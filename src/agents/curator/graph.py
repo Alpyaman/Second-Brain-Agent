@@ -19,7 +19,7 @@ from langgraph.graph import StateGraph, END
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
-from langchain_tavily import TavilySearchResults
+from langchain_tavily import TavilySearch
 
 from src.agents.curator.state import CuratorState
 from src.agents.curator.models import SearchQueryBatch, CuratorFilterResult
@@ -30,6 +30,7 @@ load_dotenv()
 # Configuration
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
 
 # Predefined high-quality search queries for each domain
@@ -201,14 +202,11 @@ def execute_web_searches(state: CuratorState) -> Dict[str, Any]:
         print(f"Executing {len(search_queries)} search queries...")
         print(f"Max results per query: {max_results}\n")
 
-        # Note: In a real implementation, you would use a web search API here.
-        # For this prototype, we'll use a placeholder that simulates search results.
-
         print("NOTE: Web search functionality requires integration with a search API")
         print("    (Google Custom Search, Serper, Tavily, etc.)")
         print("\n    For now, using example results from your provided data...\n")
 
-        tavily = TavilySearchResults(max_results=5)
+        tavily = TavilySearch(max_results=5)
         all_results = []
 
         for query_obj in search_queries:
@@ -226,7 +224,7 @@ def execute_web_searches(state: CuratorState) -> Dict[str, Any]:
                         "query_domain": query_obj["domain"]
                     })
             except Exception as e:
-                print(f"Search failed for {query_obj["query"]}: {e}")
+                print(f"Search failed for {query_obj['query']}: {e}")
 
         print(f"Collected {len(all_results)} search results")
         print("\nSearch Results:")
