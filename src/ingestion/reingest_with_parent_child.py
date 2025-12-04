@@ -25,18 +25,24 @@ Usage:
     python reingest_with_parent_child.py --dry-run
 """
 
+import os
 import argparse
 import sys
 import tempfile
 import subprocess
 from pathlib import Path
 from typing import List, Set
-
+from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-from src.core.config import CHROMA_DB_DIR, EMBEDDING_MODEL
-from ingestion.parent_child_code_parser import process_code_files_with_parent_child, ingest_with_parent_child
+from ingestion.parent_child_ingestion import process_code_files_with_parent_child, ingest_with_parent_child
+
+load_dotenv()
+
+CHROMA_DB_DIR = os.getenv("CHROMA_DB_DIR", "data/chroma_db")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+
 
 def get_repositories_from_collection(collection_name: str) -> List[dict]:
     """

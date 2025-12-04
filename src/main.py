@@ -82,8 +82,7 @@ def query_brain(collection_name: str, query: str, k: int = 5) -> str:
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.output_parsers import StrOutputParser
     from tools.memory import get_relevant_preferences
-
-    from src.ingestion.parent_child_code_parser import retrieve_with_parent_lookup
+    from ingestion.parent_child_ingestion import retrieve_with_parent_lookup
 
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "codellama")
@@ -143,17 +142,25 @@ def query_brain(collection_name: str, query: str, k: int = 5) -> str:
 
     # Build system prompt based on collection type
     if "brain" in collection_name and collection_name != "second_brain_notes":
-        # Code brain - more technical
-        system_prompt = f"""You are an expert software engineer assistant with access to a specialized knowledge base ({collection_name}).
+        # Code brain - more technical and STRICT about using only provided code
 
-Guidelines:
-- Answer questions based ONLY on the provided code context
-- Provide specific code examples, patterns, and best practices from the context
-- If the context contains relevant code, explain it clearly with examples
-- If the answer is NOT in the context, say: "I don't have that information in this brain collection."
-- Be technical, precise, and include code snippets when relevant
-- Focus on practical implementation details"""
-    else:
+        system_prompt = f"""You are an expert code analyst with access to a specialized codebase ({collection_name}).
+
+CRITICAL RULES:
+1. ONLY analyze the SPECIFIC CODE provided in the context below
+2. DO NOT provide generic programming knowledge or patterns you know about
+3. DO NOT mention patterns/libraries unless they appear in the provided code
+4. Quote actual code snippets from the context to support your analysis
+5. If the code doesn't show a pattern, say "I don't see that in the provided code"
+
+Your task:
+- Analyze the ACTUAL code structure, patterns, and implementations shown
+- Identify specific components, functions, and their relationships
+- Note how they're implemented (not how they could be implemented)
+- Provide file names and line examples from the context
+
+Be specific, precise, and grounded in the actual code provided."""
+
         # Notes brain - more conversational
         system_prompt = """You are a helpful assistant that answers questions based ONLY on the provided context from the user's personal notes.
 
