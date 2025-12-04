@@ -1,0 +1,88 @@
+Summary
+Machine Learning Engineer for Deal Intelligence Platform (Pilot Project)
+
+Title:
+Machine Learning Engineer Needed (Graph, Embeddings, ML Matching) — Pilot Project for AI Deal Platform
+
+About the Project
+
+I’m building an AI-driven deal origination platform (companies → investors → acquirers).
+I need a skilled ML engineer to help build the first version of the intelligence layer.
+
+This is not a full-time role.
+This is a paid pilot project to build a small, working prototype of:
+
+Company & investor embeddings
+
+Basic matching model (cosine similarity or simple ML model)
+
+Small deal graph representation
+
+Simple scoring function (fit score)
+
+If the collaboration is strong, this continues into advanced work (graph ML, multi-agent system, RL, etc.), but for now the scope is small and affordable.
+
+What I Need in This First Milestone
+Milestone 1 (Fixed budget: $150–$300 depending on experience)
+
+✔ Extract text from ~50–100 companies + investors
+✔ Generate embeddings (OpenAI, HuggingFace, or similar)
+✔ Build a simple vector search or similarity scoring
+✔ Output: a list of “best-matching investors for each company”
+✔ Bonus (optional): small graph structure and simple centrality score
+
+This is an MVP intelligence layer, not the full system.
+
+Ideal Skills
+
+You should know at least a few of these:
+
+Python
+
+ML fundamentals
+
+Embeddings (OpenAI, HuggingFace, or Sentence Transformers)
+
+Vector search (Faiss, pgvector, or similar)
+
+Basic knowledge graph or graph libraries (optional but helpful)
+
+Simple ML models (logistic regression, XGBoost, etc.)
+
+You do NOT need deep RL or multi-agent experience at this stage.
+
+Deliverables
+
+Clean Python notebook or script
+
+A CSV/JSON showing:
+
+Embeddings
+
+Fit scores
+
+Ranked investor lists
+
+Short explanation of your approach
+
+Requirements
+
+Be fast and reliable
+
+Be comfortable with early-stage ambiguity
+
+Speak clear English
+
+Deliver small results quickly
+
+If you’re strong, I will continue with you for bigger, well-compensated tasks later (graph ML, personalization engine, agent system, etc.)
+
+How to Apply
+
+Send:
+
+A short example of any embedding-based or matching project you built
+
+Your proposed fixed price for Milestone 1
+
+When you can start
