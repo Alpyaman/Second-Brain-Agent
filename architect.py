@@ -37,11 +37,11 @@ def print_design_document(design: str, iteration: int):
 def interactive_mode(is_job_description: bool = False):
     """Run an interactive architect session with multiple iterations."""
     if is_job_description:
-        print_section_header("🏗️  ARCHITECT SESSION - Job Description Mode")
+        print_section_header("  ARCHITECT SESSION - Job Description Mode")
         print("Welcome to the Instant Consultant! Paste a job description from Upwork/Freelancer,")
         print("and I'll create a professional Technical Design Document for you.\n")
     else:
-        print_section_header("🏗️  ARCHITECT SESSION - Interactive Mode")
+        print_section_header("  ARCHITECT SESSION - Interactive Mode")
         print("Welcome to Architect Session! I'll help you design your system based on")
         print("your existing codebase patterns and coding preferences.\n")
 
