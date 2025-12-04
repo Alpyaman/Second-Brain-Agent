@@ -157,10 +157,10 @@ def interactive_mode(is_job_description: bool = False):
 def single_run_mode(goal: str, is_job_description: bool = False):
     """Run a single architect session without interaction."""
     if is_job_description:
-        print_section_header("🏗️  INSTANT CONSULTANT - Job Description Mode")
+        print_section_header("  INSTANT CONSULTANT - Job Description Mode")
         print("Generating professional Technical Design Document from job posting...\n")
     else:
-        print_section_header("🏗️  ARCHITECT SESSION - Single Run Mode")
+        print_section_header("  ARCHITECT SESSION - Single Run Mode")
         print(f"Goal: {goal}\n")
 
     # Run design generation

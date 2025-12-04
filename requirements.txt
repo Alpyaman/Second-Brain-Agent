@@ -61,6 +61,7 @@ langchain-community==0.4.1
 langchain-core==1.1.0
 langchain-google-genai==3.2.0
 langchain-huggingface==1.1.0
+langchain-ollama==1.0.0
 langchain-tavily==0.2.13
 langchain-text-splitters==1.0.0
 langgraph==1.0.4
@@ -79,6 +80,7 @@ mypy_extensions==1.1.0
 networkx==3.6
 numpy==2.3.5
 oauthlib==3.3.1
+ollama==0.6.1
 onnxruntime==1.23.2
 opentelemetry-api==1.38.0
 opentelemetry-exporter-otlp-proto-common==1.38.0
@@ -126,8 +128,10 @@ six==1.17.0
 smmap==5.0.2
 SQLAlchemy==2.0.44
 sympy==1.14.0
+tavily-python==0.7.13
 tenacity==9.1.2
 threadpoolctl==3.6.0
+tiktoken==0.12.0
 tokenizers==0.22.1
 torch==2.9.1
 tqdm==4.67.1
