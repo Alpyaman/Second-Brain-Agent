@@ -1,49 +1,199 @@
 # Second-Brain-Agent
 
-An AI-powered "Chief of Staff" and "Architect" agent built with LangGraph, ChromaDB, and HuggingFace models. This agent serves as your personal second brain, helping you manage knowledge, calendar, email, and architectural design.
+**Transform job descriptions into working code in under 5 minutes!**
 
-**Key Features**:
-- Uses local HuggingFace embeddings - no API keys required for ingestion
-- Interactive Architect Mode - design systems aligned with your coding style
-- Long-term memory - learns and respects your preferences
-- Code-aware - understands your codebase patterns
+An AI-powered multi-agent system for freelance developers that turns raw job postings into professional Technical Design Documents and working code prototypes.
+
+## 🚀 Quick Start for Freelancers
+
+**Phase 1: Instant Consultant** - Job Description → Professional TDD (30 seconds)
+```bash
+python architect.py --job-description --goal "$(cat job-posting.txt)" --no-interactive > design.md
+```
+
+**Phase 2: Rapid Prototyper** - TDD → Working Code (2-3 minutes)
+```bash
+python dev_team.py --tdd-file design.md --output-dir ./my-project
+```
+
+**Result**: Complete project with backend, frontend, Docker configs, and documentation ready to demo!
+
+**📖 [Complete User Guide](docs/USER_GUIDE.md)** | **[Examples](examples/)** | **[5-Minute Tutorial](docs/USER_GUIDE.md#quick-start-5-minutes)**
+
+---
+
+## Key Features
+
+**For Freelancers:**
+- ✅ Generate professional Technical Design Documents from job descriptions
+- ✅ Create working MVPs in minutes to demonstrate expertise
+- ✅ Win more proposals with proof of capability
+- ✅ Support for FastAPI, Django, React, Next.js, PostgreSQL, MongoDB
+- ✅ Docker-ready development environments
+- ✅ Complete project scaffolding (configs, tests, documentation)
+
+**For All Developers:**
+- 🧠 AI-powered Chief of Staff for daily briefings
+- 📐 Interactive Architect Mode for system design
+- 🤖 Automated codebase discovery and learning
+- 💾 Long-term memory system for preferences
+- 📅 Google Calendar and Gmail integration
+- 🔍 Local embeddings - no API keys for ingestion
+
+---
+
+## Installation (2 Minutes)
+
+### Prerequisites
+- Python 3.8+
+- [Ollama](https://ollama.com/download) (local LLM - free!)
+
+### Setup
+
+```bash
+# 1. Clone repository
+git clone https://github.com/your-username/Second-Brain-Agent.git
+cd Second-Brain-Agent
+
+# 2. Install dependencies
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# 3. Start Ollama
+ollama serve
+ollama pull llama2  # or codellama for better code generation
+
+# 4. You're ready!
+python architect.py --help
+python dev_team.py --help
+```
+
+**No API keys required!** Uses local Ollama models.
+
+**For detailed setup**: See [docs/USER_GUIDE.md](docs/USER_GUIDE.md#installation)
+
+---
+
+## Usage Examples
+
+### Example 1: Simple REST API
+```bash
+# Generate TDD from job description
+python architect.py --job-description \
+  --goal "Build a REST API for a blog with posts, comments, user auth" \
+  --no-interactive > blog-api-tdd.md
+
+# Generate working code
+python dev_team.py --tdd-file blog-api-tdd.md --output-dir ./blog-api
+
+# Run it
+cd blog-api && docker-compose up
+```
+
+### Example 2: Full-Stack Application
+```bash
+# From a job posting file
+python architect.py --job-description \
+  --goal "$(cat examples/sample_job_description.txt)" \
+  --no-interactive > project-tdd.md
+
+# Generate MVP (Phase 1 only)
+python dev_team.py --tdd-file project-tdd.md --output-dir ./mvp --phase 1
+
+# Later, add extended features (Phase 2)
+python dev_team.py --tdd-file project-tdd.md --output-dir ./mvp --phase 2
+```
+
+**More examples**: [docs/USER_GUIDE.md#examples](docs/USER_GUIDE.md#examples)
+
+---
 
 ## Project Structure
 
 ```
 Second-Brain-Agent/
-├── src/                    # Source code
-│   ├── __init__.py
-│   ├── config.py          # Configuration and environment variables
-│   ├── state.py           # Agent state definition (TypedDict)
-│   ├── graph.py           # LangGraph workflow and nodes
-│   ├── architect_state.py # Architect session state definition
-│   ├── architect_graph.py # Architect session workflow
-│   ├── main.py            # CLI interface (recommended entry point)
-│   ├── ingest_notes.py    # Script to ingest and index notes
-│   ├── brain.py           # Query interface for your second brain
-│   └── tools/             # External service integrations
-│       ├── __init__.py
-│       ├── memory.py           # Long-term memory and user preferences
-│       ├── google_calendar.py  # Google Calendar integration
-│       └── gmail.py            # Gmail integration (draft emails)
+├── src/
+│   ├── agents/
+│   │   ├── architect/           # Phase 1: Job Description → TDD
+│   │   │   ├── graph.py         # TDD generation workflow
+│   │   │   └── state.py         # Architect state definition
+│   │   └── dev_team/            # Phase 2: TDD → Code
+│   │       ├── graph.py         # Multi-agent code generation
+│   │       ├── state.py         # Dev team state definition
+│   │       ├── parsers.py       # TDD parsing utilities
+│   │       └── code_generator.py # Code extraction and scaffolding
+│   ├── core/
+│   │   └── config.py            # Configuration
+│   ├── tools/
+│   │   ├── memory.py            # Long-term memory system
+│   │   ├── google_calendar.py  # Calendar integration
+│   │   └── gmail.py             # Gmail integration
+│   ├── ingestion/               # Codebase ingestion utilities
+│   ├── graph.py                 # Chief of Staff workflow
+│   └── brain.py                 # Knowledge base query interface
+├── docs/
+│   ├── USER_GUIDE.md            # Complete user guide
+│   ├── PHASE1_INSTANT_CONSULTANT.md
+│   ├── PHASE2_RAPID_PROTOTYPER_DESIGN.md
+│   └── INSTANT_CONSULTANT_USAGE.md
+├── examples/
+│   └── sample_job_description.txt
 ├── data/
-│   ├── notes/             # Place your markdown/Notion notes here
-│   ├── preferences.json   # User preferences and guidelines (auto-created)
-│   └── chroma_db/         # ChromaDB vector store (auto-created)
-├── chief_of_staff.py      # Simple runner script
-├── architect.py           # Architect Mode interactive CLI
-├── credentials.json       # Google OAuth credentials (you provide)
-├── token.json             # Calendar auth token (gitignored)
-├── gmail_token.json       # Gmail auth token (gitignored)
-├── requirements.txt       # Python dependencies
-├── .env                   # Your environment variables (create from .env.example)
-├── .env.example          # Template for environment variables
-├── GOOGLE_CALENDAR_SETUP.md  # Calendar API setup guide
-└── GMAIL_SETUP.md            # Gmail API setup guide
+│   ├── notes/                   # Your markdown notes
+│   ├── preferences.json         # User preferences
+│   └── chroma_db/               # Vector database
+├── architect.py                 # Phase 1 CLI (Job Description → TDD)
+├── dev_team.py                  # Phase 2 CLI (TDD → Code)
+├── chief_of_staff.py            # Daily briefing CLI
+├── curator.py                   # Automated codebase discovery
+└── requirements.txt             # Python dependencies
 ```
 
-## Setup Instructions
+---
+
+## How It Works
+
+### Phase 1: Instant Consultant (architect.py)
+1. **Input**: Raw job description text from Upwork/Freelancer
+2. **Processing**: LangGraph workflow with specialized nodes:
+   - Parse job description → Extract requirements
+   - Generate comprehensive 13-section TDD
+   - Support iterative refinement
+3. **Output**: Professional Technical Design Document with:
+   - Executive Summary, Requirements Analysis
+   - System Architecture, Tech Stack Recommendations
+   - Data Model, API Design, Code Structure
+   - Security, Scalability, Implementation Plan
+   - Testing Strategy, Deployment, Risk Assessment
+
+### Phase 2: Rapid Prototyper (dev_team.py)
+1. **Input**: Technical Design Document from Phase 1
+2. **Processing**: Multi-agent collaboration:
+   - **TDD Parser**: Extracts tech stack, features, API specs, data models
+   - **Tech Lead**: Decomposes features into frontend/backend tasks
+   - **Frontend Developer**: Generates React/Next.js components (uses frontend_brain for patterns)
+   - **Backend Developer**: Generates FastAPI/Django code (uses backend_brain for patterns)
+   - **Code Generator**: Extracts code blocks, validates syntax, generates configs
+   - **Integration Reviewer**: Validates consistency and integration
+3. **Output**: Working project with actual files:
+   - Backend code (routes, models, services)
+   - Frontend code (components, pages, API integration)
+   - Configuration files (package.json, requirements.txt, docker-compose.yml)
+   - Documentation (README, setup instructions)
+   - Development tools (.gitignore, Dockerfile)
+
+**Time**: Phase 1 (30-60s) + Phase 2 (2-3 min) = Under 5 minutes total!
+
+**Tech Stack**: LangGraph, Ollama (local LLM), ChromaDB (optional RAG), Python 3.8+
+
+---
+
+## Advanced Setup & Features
+
+The sections below cover advanced features like Chief of Staff, Calendar/Gmail integration, and codebase ingestion. **For the freelance workflow (Phase 1 + 2), the [quick installation](#installation-2-minutes) is all you need!**
+
+### Detailed Setup Instructions
 
 ### 1. Create Virtual Environment
 
