@@ -18,7 +18,7 @@ from langgraph.graph import StateGraph, END
 from src.agents.architect.state import ArchitectState
 from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR
 from dotenv import load_dotenv
-from tools.memory import get_relevant_preferences
+from src.tools.memory import get_relevant_preferences
 
 load_dotenv()
 
