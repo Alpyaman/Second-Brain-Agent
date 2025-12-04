@@ -10,7 +10,15 @@ class ArchitectState(TypedDict):
     """State for the Architect Session workflow."""
 
     # User input
-    goal: str # High-level architectural goal
+    goal: str # High-level architectural goal or raw job description
+    is_job_description: Optional[bool] # Flag indicating if input is a job posting
+
+    # Parsed job description fields (if applicable)
+    project_title: Optional[str]
+    project_description: Optional[str]
+    required_features: Optional[List[str]]
+    tech_requirements: Optional[List[str]]
+    budget_timeline: Optional[str]
 
     # Retrieved context
     code_examples: str
