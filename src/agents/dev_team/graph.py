@@ -428,6 +428,351 @@ def integration_reviewer(state: DevTeamState) -> DevTeamState:
 
     return state
 
+# ============================================================================
+# PHASE 2 NODES: CODE GENERATION & FILE WRITING
+# ============================================================================
+def parse_tdd_node(state: DevTeamState) -> DevTeamState:
+    """
+    Parse TDD content if provided (Phase 2).
+
+    If TDD is provided, extracts: tech stack, features, API specs, data models.
+    Otherwise, skips parsing and continues with original workflow.
+    """
+    if not state.get('tdd_content'):
+        print("\nNo TDD provided, using feature_request workflow")
+        return state
+
+    print("\n" + "=" * 70)
+    print("TDD PARSER: Extracting Requirements from Technical Design Document")
+    print("=" * 70)
+
+    from src.agents.dev_team.parsers import parse_tdd_to_state
+
+    # Parse TDD into structured data
+    parsed_data = parse_tdd_to_state(
+        state['tdd_content'],
+        phase=state.get('implementation_phase', 1)
+    )
+
+    # Update state with parsed data
+    for key, value in parsed_data.items():
+        state[key] = value
+
+    # Create a feature_request from TDD features for backward compatibility
+    if state.get('features_to_implement'):
+        features = state['features_to_implement']
+        feature_names = [f['feature_name'] for f in features if f.get('feature_name')]
+        state['feature_request'] = f"Implement: {', '.join(feature_names[:3])}"
+
+        print(f"\nExtracted {len(features)} features from TDD")
+        print(f"Implementation Phase: {state.get('implementation_phase', 1)}")
+        print(f"Tech Stack: {state.get('tech_stack', {})}")
+
+    return state
+
+def extract_code_node(state: DevTeamState) -> DevTeamState:
+    """
+    Extract code blocks from LLM-generated markdown into file dictionaries (Phase 2).
+
+    Parses frontend_code and backend_code markdown, extracting:
+    - Code blocks by language
+    - File path markers
+    - Organizing into proper file structure
+    """
+    print("\n" + "=" * 70)
+    print("CODE EXTRACTOR: Organizing Code into Files")
+    print("=" * 70)
+
+    from src.agents.dev_team.code_generator import extract_and_organize_code
+
+    # Extract frontend files
+    if state.get('frontend_code') and state['frontend_code'].strip():
+        print("\nExtracting frontend files...")
+        try:
+            frontend_files = extract_and_organize_code(
+                state['frontend_code'],
+                language='typescript',
+                base_path='frontend/src'
+            )
+            state['frontend_files'] = frontend_files
+            print(f"✓ Extracted {len(frontend_files)} frontend files")
+        except Exception as e:
+            print(f"Error extracting frontend files: {e}")
+            state['frontend_files'] = {}
+
+    # Extract backend files
+    if state.get('backend_code') and state['backend_code'].strip():
+        print("\nExtracting backend files...")
+        try:
+            backend_files = extract_and_organize_code(
+                state['backend_code'],
+                language='python',
+                base_path='backend/src'
+            )
+            state['backend_files'] = backend_files
+            print(f"✓ Extracted {len(backend_files)} backend files")
+        except Exception as e:
+            print(f"Error extracting backend files: {e}")
+            state['backend_files'] = {}
+
+    total_files = len(state.get('frontend_files', {})) + len(state.get('backend_files', {}))
+    print(f"\nTotal code files extracted: {total_files}")
+
+    return state
+
+def generate_scaffolding_node(state: DevTeamState) -> DevTeamState:
+    """
+    Generate project scaffolding and configuration files (Phase 2).
+
+    Creates: .gitignore, README.md, package.json, requirements.txt, docker-compose.yml
+    """
+    print("\n" + "=" * 70)
+    print("SCAFFOLDER: Generating Project Configuration")
+    print("=" * 70)
+
+    from src.agents.dev_team.code_generator import generate_gitignore, generate_readme
+
+    config_files = {}
+    tech_stack = state.get('tech_stack', {'frontend': [], 'backend': [], 'database': []})
+
+    # Generate .gitignore
+    print("\nGenerating .gitignore...")
+    config_files['.gitignore'] = generate_gitignore(tech_stack)
+
+    # Generate README.md
+    print("Generating README.md...")
+    project_name = state.get('project_metadata', {}).get('project_name', 'Generated Project')
+    features = state.get('features_to_implement', [])
+    config_files['README.md'] = generate_readme(project_name, tech_stack, features)
+
+    # Generate package.json (if Node.js/React frontend)
+    if any('react' in str(t).lower() or 'node' in str(t).lower() or 'next' in str(t).lower()
+           for tech_list in tech_stack.values() for t in tech_list):
+        print("Generating frontend/package.json...")
+        config_files['frontend/package.json'] = generate_package_json(state, tech_stack)
+
+    # Generate requirements.txt (if Python backend)
+    if any('python' in str(t).lower() or 'fastapi' in str(t).lower() or 'django' in str(t).lower()
+           for tech_list in tech_stack.values() for t in tech_list):
+        print("Generating backend/requirements.txt...")
+        config_files['backend/requirements.txt'] = generate_requirements_txt(state, tech_stack)
+
+    # Generate docker-compose.yml (if Docker in stack)
+    if any('docker' in str(t).lower() for tech_list in tech_stack.values() for t in tech_list):
+        print("Generating docker-compose.yml...")
+        config_files['docker-compose.yml'] = generate_docker_compose(state, tech_stack)
+
+    state['config_files'] = config_files
+    print(f"\n✓ Generated {len(config_files)} configuration files")
+
+    return state
+
+def write_files_node(state: DevTeamState) -> DevTeamState:
+    """
+    Write all generated files to disk (Phase 2).
+
+    Creates directory structure and writes:
+    - Frontend files
+    - Backend files
+    - Configuration files
+    - Database files
+    - Test files
+    """
+    print("\n" + "=" * 70)
+    print("FILE WRITER: Writing Files to Disk")
+    print("=" * 70)
+
+    from pathlib import Path
+
+    output_dir = state.get('output_directory', './generated_project')
+    output_path = Path(output_dir)
+
+    # Create output directory
+    output_path.mkdir(parents=True, exist_ok=True)
+    print(f"\nOutput directory: {output_path.absolute()}")
+
+    # Collect all files
+    all_files = {}
+    all_files.update(state.get('frontend_files', {}))
+    all_files.update(state.get('backend_files', {}))
+    all_files.update(state.get('config_files', {}))
+    all_files.update(state.get('database_files', {}))
+    all_files.update(state.get('test_files', {}))
+
+    if not all_files:
+        print("\n⚠ No files to write!")
+        state['files_written'] = 0
+        state['generated_files'] = []
+        return state
+
+    written_files = []
+
+    print(f"\nWriting {len(all_files)} files...\n")
+
+    for filepath, content in all_files.items():
+        try:
+            full_path = output_path / filepath
+            full_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(full_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+
+            written_files.append(str(full_path))
+            print(f"  ✓ {filepath}")
+
+        except Exception as e:
+            print(f"  ✗ {filepath}: {e}")
+
+    state['generated_files'] = written_files
+    state['files_written'] = len(written_files)
+
+    print(f"\n{'=' * 70}")
+    print(f"✅ Successfully generated {len(written_files)} files in {output_dir}/")
+    print(f"{'=' * 70}\n")
+
+    return state
+
+# Helper functions for scaffolding
+
+def generate_package_json(state: DevTeamState, tech_stack: dict) -> str:
+    """Generate package.json for frontend."""
+    project_name = state.get('project_metadata', {}).get('project_name', 'frontend-app')
+    safe_name = project_name.lower().replace(' ', '-').replace('_', '-')
+
+    # Determine framework
+    is_react = any('react' in str(t).lower() for tech_list in tech_stack.values() for t in tech_list)
+    is_next = any('next' in str(t).lower() for tech_list in tech_stack.values() for t in tech_list)
+    is_typescript = any('typescript' in str(t).lower() for tech_list in tech_stack.values() for t in tech_list)
+
+    dependencies = {}
+    dev_dependencies = {}
+    scripts = {}
+
+    if is_next:
+        dependencies["next"] = "^14.0.0"
+        dependencies["react"] = "^18.2.0"
+        dependencies["react-dom"] = "^18.2.0"
+        scripts["dev"] = "next dev"
+        scripts["build"] = "next build"
+        scripts["start"] = "next start"
+    elif is_react:
+        dependencies["react"] = "^18.2.0"
+        dependencies["react-dom"] = "^18.2.0"
+        dependencies["react-scripts"] = "5.0.1"
+        scripts["start"] = "react-scripts start"
+        scripts["build"] = "react-scripts build"
+        scripts["test"] = "react-scripts test"
+
+    if is_typescript:
+        dev_dependencies["typescript"] = "^5.0.0"
+        dev_dependencies["@types/react"] = "^18.2.0"
+        dev_dependencies["@types/react-dom"] = "^18.2.0"
+        dev_dependencies["@types/node"] = "^20.0.0"
+
+    import json
+    return json.dumps({
+        "name": safe_name,
+        "version": "0.1.0",
+        "private": True,
+        "scripts": scripts,
+        "dependencies": dependencies,
+        "devDependencies": dev_dependencies
+    }, indent=2)
+
+def generate_requirements_txt(state: DevTeamState, tech_stack: dict) -> str:
+    """Generate requirements.txt for backend."""
+    requirements = []
+
+    # Determine framework
+    is_fastapi = any('fastapi' in str(t).lower() for tech_list in tech_stack.values() for t in tech_list)
+    is_django = any('django' in str(t).lower() for tech_list in tech_stack.values() for t in tech_list)
+
+    if is_fastapi:
+        requirements.extend([
+            "fastapi==0.104.1",
+            "uvicorn[standard]==0.24.0",
+            "pydantic==2.5.0",
+            "python-multipart==0.0.6"
+        ])
+    elif is_django:
+        requirements.extend([
+            "Django==4.2.0",
+            "djangorestframework==3.14.0"
+        ])
+
+    # Database
+    databases = tech_stack.get('database', [])
+    if any('postgresql' in str(db).lower() for db in databases):
+        requirements.append("psycopg2-binary==2.9.9")
+        if is_fastapi:
+            requirements.append("sqlalchemy==2.0.23")
+    elif any('mongodb' in str(db).lower() for db in databases):
+        requirements.append("pymongo==4.6.0")
+
+    # Common utilities
+    requirements.extend([
+        "python-dotenv==1.0.0",
+        "pytest==7.4.3"
+    ])
+
+    return '\n'.join(requirements) + '\n'
+
+def generate_docker_compose(state: DevTeamState, tech_stack: dict) -> str:
+    """Generate docker-compose.yml."""
+    services = []
+
+    # Backend service
+    if tech_stack.get('backend'):
+        services.append("""  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/appdb
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload""")
+
+    # Frontend service
+    if tech_stack.get('frontend'):
+        services.append("""  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev""")
+
+    # Database service
+    databases = tech_stack.get('database', [])
+    if any('postgresql' in str(db).lower() for db in databases):
+        services.append("""  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data""")
+
+    volumes_section = ""
+    if any('postgresql' in str(db).lower() for db in databases):
+        volumes_section = "\nvolumes:\n  postgres_data:"
+
+    return f"""version: '3.8'
+
+services:
+{chr(10).join(services)}
+{volumes_section}
+"""
+
 
 # ============================================================================
 # GRAPH CONSTRUCTION
@@ -435,46 +780,134 @@ def integration_reviewer(state: DevTeamState) -> DevTeamState:
 
 def create_dev_team_graph() -> StateGraph:
     """
-    Create the Multi-Agent Development Team LangGraph workflow.
+    Create the Multi-Agent Development Team LangGraph workflow (Original - Phase 1).
+
+ 
 
     Workflow:
+
     1. Tech Lead decomposes feature request
+
     2. Frontend and Backend specialists work in parallel
+
     3. Integration Reviewer validates the integration
+
     4. End
+
+    """
+
+    workflow = StateGraph(DevTeamState)
+
+ 
+
+    # Add nodes
+
+    workflow.add_node("tech_lead", tech_lead_dispatcher)
+
+    workflow.add_node("frontend_dev", frontend_developer)
+
+    workflow.add_node("backend_dev", backend_developer)
+
+    workflow.add_node("reviewer", integration_reviewer)
+
+ 
+
+    # Define workflow
+
+    workflow.set_entry_point("tech_lead")
+
+ 
+
+    # After tech lead, both specialists work in parallel
+
+    workflow.add_edge("tech_lead", "frontend_dev")
+
+    workflow.add_edge("tech_lead", "backend_dev")
+
+ 
+
+    # Both must complete before review
+
+    workflow.add_edge("frontend_dev", "reviewer")
+
+    workflow.add_edge("backend_dev", "reviewer")
+
+ 
+
+    # Review ends the workflow
+
+    workflow.add_edge("reviewer", END)
+
+ 
+
+    return workflow.compile()
+
+ 
+
+ 
+
+def create_dev_team_graph_v2() -> StateGraph:
+    """
+    Create the Phase 2 Enhanced Development Team LangGraph workflow.
+
+    Workflow:
+    1. Parse TDD (if provided) to extract requirements
+    2. Tech Lead decomposes into tasks
+    3. Frontend and Backend specialists generate code in parallel
+    4. Extract code blocks into file dictionaries
+    5. Generate project scaffolding (configs, README, etc.)
+    6. Integration Reviewer validates
+    7. Write all files to disk
+    8. End
     """
     workflow = StateGraph(DevTeamState)
 
-    # Add nodes
+    # Add all nodes (original + Phase 2)
+    workflow.add_node("parse_tdd", parse_tdd_node)  # NEW
     workflow.add_node("tech_lead", tech_lead_dispatcher)
     workflow.add_node("frontend_dev", frontend_developer)
     workflow.add_node("backend_dev", backend_developer)
+    workflow.add_node("extract_code", extract_code_node)  # NEW
+    workflow.add_node("generate_scaffolding", generate_scaffolding_node)  # NEW
     workflow.add_node("reviewer", integration_reviewer)
+    workflow.add_node("write_files", write_files_node)  # NEW
 
-    # Define workflow
-    workflow.set_entry_point("tech_lead")
+    # Define Phase 2 workflow
+    workflow.set_entry_point("parse_tdd")
 
-    # After tech lead, both specialists work in parallel
+    # Parse TDD -> Tech Lead
+    workflow.add_edge("parse_tdd", "tech_lead")
+
+    # Tech Lead -> Both specialists (parallel)
     workflow.add_edge("tech_lead", "frontend_dev")
     workflow.add_edge("tech_lead", "backend_dev")
 
-    # Both must complete before review
-    workflow.add_edge("frontend_dev", "reviewer")
-    workflow.add_edge("backend_dev", "reviewer")
+    # Both specialists -> Extract Code
+    workflow.add_edge("frontend_dev", "extract_code")
+    workflow.add_edge("backend_dev", "extract_code")
 
-    # Review ends the workflow
-    workflow.add_edge("reviewer", END)
+    # Extract Code -> Generate Scaffolding
+    workflow.add_edge("extract_code", "generate_scaffolding")
+
+    # Generate Scaffolding -> Integration Review
+    workflow.add_edge("generate_scaffolding", "reviewer")
+
+    # Integration Review -> Write Files
+    workflow.add_edge("reviewer", "write_files")
+
+    # Write Files -> END
+    workflow.add_edge("write_files", END)
 
     return workflow.compile()
 
 
 # ============================================================================
-# MAIN EXECUTION FUNCTION
+# MAIN EXECUTION FUNCTIONS
 # ============================================================================
 
 def run_dev_team(feature_request: str) -> DevTeamState:
     """
-    Run the multi-agent development team on a feature request.
+    Run the multi-agent development team on a feature request (Original - Phase 1).
 
     Args:
         feature_request: High-level feature description
@@ -505,6 +938,67 @@ def run_dev_team(feature_request: str) -> DevTeamState:
     )
 
     # Run workflow
+    final_state = app.invoke(initial_state)
+
+    return final_state
+
+def run_dev_team_v2(feature_request: str = "", tdd_content: str = "", implementation_phase: int = 1, output_directory: str = "./generated_project") -> DevTeamState:
+    """
+    Run the Phase 2 Enhanced development team (TDD → Code Files).
+
+    Args:
+        feature_request: High-level feature description (optional if TDD provided)
+        tdd_content: Full TDD markdown from Phase 1 (optional)
+        implementation_phase: Which phase to implement (1, 2, or 3)
+        output_directory: Where to write generated files
+
+    Returns:
+        Final state with generated files written to disk
+    """
+    # Create Phase 2 graph
+    app = create_dev_team_graph_v2()
+
+    # Initialize state with all required and optional fields
+    initial_state = DevTeamState(
+        # Phase 1 fields
+        feature_request=feature_request or "",
+        frontend_tasks=[],
+        backend_tasks=[],
+        architecture_notes="",
+        frontend_code="",
+        frontend_context="",
+        frontend_status="pending",
+        backend_code="",
+        backend_context="",
+        backend_status="pending",
+        integration_review="",
+        issues_found=[],
+        review_status="pending",
+        iteration_count=0,
+        needs_revision=False,
+        # Phase 2 fields
+        tdd_content=tdd_content,
+        tdd_parsed=False,
+        project_metadata=None,
+        tech_stack=None,
+        features_to_implement=None,
+        api_specification=None,
+        data_model=None,
+        security_requirements=None,
+        implementation_phase=implementation_phase,
+        frontend_files=None,
+        backend_files=None,
+        config_files=None,
+        database_files=None,
+        test_files=None,
+        generated_files=None,
+        validation_results=None,
+        validation_errors=None,
+        output_directory=output_directory,
+        files_written=None
+    )
+
+    # Run Phase 2 workflow
     final_state = app.invoke(initial_state)
 
     return final_state
