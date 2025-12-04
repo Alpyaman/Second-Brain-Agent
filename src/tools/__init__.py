@@ -1,9 +1,12 @@
 """
-Tools package for Second-Brain-Agent.
+Tools and Integrations
 
-This package contains various tools for the agent to interact with external servies:
-    - google_calendar.py: Google Calendar Integration (read-only)
-    - gmail.py: Gmail integration (create drafts only)
+This package contains external service integrations and utilities:
+- Memory: Long-term preferences and user memory
+- Google Calendar: Calendar integration
+- Gmail: Email draft creation
 """
 
 __version__ = "0.1.0"
+
+__all__ = []
