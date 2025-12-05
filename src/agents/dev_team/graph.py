@@ -9,7 +9,7 @@ This is NOT "just wrapping an LLM" - each agent learns from different codebases.
 """
 
 import os
-from typing import List, Dict
+from typing import List, Dict, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
@@ -234,7 +234,22 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
 
     KEY: Queries frontend_brain (shadcn/ui, Next.js patterns) for context.
     This gives it DISTINCT expertise from backend developer.
+    
+    SKIPS execution for script/notebook/api projects (no frontend needed).
     """
+    # Skip frontend generation for non-web-app projects
+    project_type = state.get('project_type', 'web_app')
+    if project_type in ['script', 'notebook', 'library', 'api']:
+        print("\n" + "=" * 70)
+        print("FRONTEND SPECIALIST: Skipping (not a web app project)")
+        print("=" * 70)
+        print(f"Project type: {project_type} - No frontend needed")
+        return {
+            'frontend_code': '# No frontend needed for this project type',
+            'frontend_status': 'skipped',
+            'frontend_context': 'Project type does not require frontend'
+        }
+    
     print("\n" + "=" * 70)
     print("FRONTEND SPECIALIST: Implementing UI")
     print("=" * 70)
@@ -314,17 +329,28 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
     KEY: Queries backend_brain (FastAPI, Django patterns) for context.
     This gives it DISTINCT expertise from frontend developer.
     """
+    # Get project type
+    project_type = state.get('project_type', 'web_app')
+    
     print("\n" + "=" * 70)
-    print("BACKEND SPECIALIST: Implementing API")
+    if project_type in ['script', 'notebook']:
+        print("BACKEND SPECIALIST: Implementing Python Scripts")
+    else:
+        print("BACKEND SPECIALIST: Implementing API")
     print("=" * 70)
 
    # Combine tasks into a single query
     tasks_summary = " + ".join(state['backend_tasks'])
     print(f"Tasks: {tasks_summary}\n")
 
-    # CRITICAL: Query backend_brain (NOT frontend_brain!)
-    print("Retrieving patterns from backend_brain...")
-    context = query_expert_brain(query=tasks_summary, collection_name="backend_brain", k=5)
+    # For script/notebook, adjust approach (don't query FastAPI patterns)
+    if project_type in ['script', 'notebook']:
+        print("(Skipping backend_brain query for script/notebook project)")
+        context = "Generating standalone Python scripts"
+    else:
+        # CRITICAL: Query backend_brain (NOT frontend_brain!)
+        print("Retrieving patterns from backend_brain...")
+        context = query_expert_brain(query=tasks_summary, collection_name="backend_brain", k=5)
 
     if "No patterns found" in context or "Error accessing" in context:
         print("Backend brain not available")
@@ -336,14 +362,80 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
             'backend_context': context
         }
 
-    print("✓ Retrieved backend patterns\n")
+        if "No patterns found" in context or "Error accessing" in context:
+            print("Backend brain not available")
+            print("   Run: python src/ingest_expert.py --expert backend --list")
+            return {
+                'backend_code': "# Backend brain not initialized. Please ingest expert knowledge.",
+                'backend_status': 'completed',
+                'backend_context': context
+            }
 
-    # Generate backend code using retrieved patterns
-    system_prompt = """You are a Backend Specialist with expertise in Python, FastAPI, and REST APIs.
+        print("✓ Retrieved backend patterns\n")
+
+    # Generate code - adjust prompt based on project type
+    if project_type == 'notebook':
+        system_prompt = """You are a Python Data Analysis Specialist.
+        Generate Jupyter notebook code cells for data analysis, CSV processing, and metrics computation.
+        Use pandas, matplotlib, and data analysis best practices."""
+        
+        user_prompt = f"""Tasks:
+        {chr(10).join(f"- {task}" for task in state['backend_tasks'])}
+
+        Architecture Context:
+        {state['architecture_notes']}
+
+        Generate Python code for data analysis:
+        1. CSV data loading and cleaning
+        2. Metrics computation (Open Rate, CTR, Error Rate)
+        3. Campaign impact analysis (pre/post comparison)
+        4. Visualizations and insights
+        5. Clear, commented code
+
+        Format files as:
+        ### scripts/promo_code_assigner.py
+        ```python
+        # Code here
+        ```
+        
+        ### notebooks/campaign_analysis.ipynb
+        ```python
+        # Jupyter notebook cells here
+        ```"""
+        
+    elif project_type == 'script':
+        system_prompt = """You are a Python Automation Specialist.
+        Generate standalone Python scripts for automation, data fetching, and processing.
+        Focus on: requests library, JSON processing, file I/O, error handling."""
+        
+        user_prompt = f"""Tasks:
+        {chr(10).join(f"- {task}" for task in state['backend_tasks'])}
+
+        Architecture Context:
+        {state['architecture_notes']}
+
+        Generate production-ready Python scripts:
+        1. Fetch data from JSON endpoints using requests library
+        2. Process and transform data (handle nulls, inconsistent types)
+        3. Apply business rules and eligibility logic
+        4. Assign unique promo codes by tier and city
+        5. Handle errors and edge cases robustly
+        6. Send POST requests to webhooks
+        7. Use requests, json, pandas libraries
+
+        Format files as:
+        ### scripts/promo_code_assigner.py
+        ```python
+        # Complete script implementation
+        ```"""
+        
+    else:
+        # Default: API/Backend
+        system_prompt = """You are a Backend Specialist with expertise in Python, FastAPI, and REST APIs.
         You have access to high-quality patterns from production codebases (FastAPI templates, Django patterns).
         Use these patterns to generate clean, performant, secure backend code."""
 
-    user_prompt = f"""Tasks:
+        user_prompt = f"""Tasks:
         {chr(10).join(f"- {task}" for task in state['backend_tasks'])}
 
         Architecture Context:
@@ -361,9 +453,9 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
         6. Follows REST best practices
 
         IMPORTANT: Format each file as a code block with the file path in a header:
-        ### app/components/ProductList.tsx
-        ```typescript
-        // File content here
+        ### app/core/config.py
+        ```python
+        # File content here
         ```
 
         Provide the complete implementation with file structure."""
@@ -558,26 +650,73 @@ def parse_tdd_node(state: DevTeamState) -> DevTeamState:
         
         # If script/notebook but extracted auth/web app features, use fallback
         if project_type in ['script', 'notebook'] and (has_auth_features or has_web_app_features):
-            print(f"⚠️  Warning: Extracted features ({', '.join(feature_names[:3])}) don't match project type ({project_type})")
-            print("   Using fallback: features from project metadata or TDD description")
+            print(f" Warning: Extracted features ({', '.join(feature_names[:3])}) don't match project type ({project_type})")
+            print("   Using fallback: building feature request from TDD content")
             
-            # Try to get features from project metadata or use generic description
-            if state.get('project_metadata') and state['project_metadata'].get('description'):
-                # Extract from description or use the parsed job description
-                desc = state['project_metadata'].get('description', '')
-                if 'promo code' in desc.lower() or 'automation' in desc.lower():
-                    state['feature_request'] = "Implement: Promo code assignment script, JSON endpoint fetching, Campaign impact analysis"
+            # Build feature request from TDD content (Requirements section or Implementation Plan)
+            fallback_request = None
+            
+            # Try to extract from TDD Requirements or Implementation Plan
+            tdd_content = state.get('tdd_content', '')
+            if 'promo code' in tdd_content.lower() or 'automation' in tdd_content.lower():
+                if 'promo code assignment' in tdd_content.lower():
+                    fallback_request = "Implement: Promo code assignment script with JSON endpoint fetching, eligibility rules, and webhook posting"
+                elif 'campaign analysis' in tdd_content.lower() or 'csv' in tdd_content.lower():
+                    fallback_request = "Implement: Campaign impact analysis with CSV processing, metrics computation (Open Rate, CTR, Error Rate), and recommendations"
                 else:
-                    state['feature_request'] = desc[:200]  # Use description as fallback
+                    fallback_request = "Implement: Python automation script for data fetching, processing, and analysis"
+            elif 'notebook' in tdd_content.lower() or 'jupyter' in tdd_content.lower():
+                fallback_request = "Implement: Jupyter notebook for data analysis, CSV processing, and campaign metrics computation"
             else:
-                # Last resort: generic script description
-                state['feature_request'] = f"Implement: {project_type.replace('_', ' ').title()} automation and data processing tasks"
+                # Generic fallback based on project type
+                if project_type == 'notebook':
+                    fallback_request = "Implement: Data analysis notebook with CSV processing, metrics computation, and visualization"
+                elif project_type == 'script':
+                    fallback_request = "Implement: Python automation script for data processing and task automation"
+                else:
+                    fallback_request = f"Implement: {project_type.replace('_', ' ').title()} project tasks"
+            
+            state['feature_request'] = fallback_request
+            print(f"   Fallback feature_request: {fallback_request}")
+            
+            # Also replace the wrong features with correct ones
+            # Build new features list from fallback
+            if project_type == 'notebook':
+                state['features_to_implement'] = [
+                    {
+                        'feature_name': 'Promo Code Assignment Script',
+                        'description': 'Build Python script to fetch JSON endpoints, apply eligibility rules, assign promo codes',
+                        'priority': 'high',
+                        'phase': '1'
+                    },
+                    {
+                        'feature_name': 'Campaign Impact Analysis',
+                        'description': 'Compute Open Rate, CTR, Error Rate per campaign and analyze pre/post impact',
+                        'priority': 'high',
+                        'phase': '1'
+                    }
+                ]
+            elif project_type == 'script':
+                state['features_to_implement'] = [
+                    {
+                        'feature_name': 'Data Fetching Script',
+                        'description': 'Fetch data from JSON endpoints and process',
+                        'priority': 'high',
+                        'phase': '1'
+                    },
+                    {
+                        'feature_name': 'Data Processing Script',
+                        'description': 'Apply business rules, transform data, handle errors',
+                        'priority': 'high',
+                        'phase': '1'
+                    }
+                ]
         else:
             # Features look correct, use them
             state['feature_request'] = f"Implement: {', '.join(feature_names[:3])}"
 
         print(f"\nExtracted {len(features)} features from TDD")
-        if feature_names:
+        if feature_names and not (project_type in ['script', 'notebook'] and (has_auth_features or has_web_app_features)):
             print(f"Features: {', '.join(feature_names[:3])}")
         print(f"Implementation Phase: {state.get('implementation_phase', 1)}")
         print(f"Tech Stack: {state.get('tech_stack', {})}")
@@ -1152,7 +1291,7 @@ def run_dev_team(feature_request: str) -> DevTeamState:
 
     return final_state
 
-def run_dev_team_v2(feature_request: str = "", tdd_content: str = "", implementation_phase: int = 1, output_directory: str = "./generated_project") -> DevTeamState:
+def run_dev_team_v2(feature_request: str = "", tdd_content: str = "", implementation_phase: int = 1, output_directory: str = "./generated_project", project_type: Optional[str] = None) -> DevTeamState:
     """
     Run the Phase 2 Enhanced development team (TDD → Code Files).
 
@@ -1161,6 +1300,7 @@ def run_dev_team_v2(feature_request: str = "", tdd_content: str = "", implementa
         tdd_content: Full TDD markdown from Phase 1 (optional)
         implementation_phase: Which phase to implement (1, 2, or 3)
         output_directory: Where to write generated files
+        project_type: Project type from architect (web_app, script, notebook, etc.)
 
     Returns:
         Final state with generated files written to disk
@@ -1190,6 +1330,7 @@ def run_dev_team_v2(feature_request: str = "", tdd_content: str = "", implementa
         tdd_content=tdd_content,
         tdd_parsed=False,
         project_metadata=None,
+        project_type=project_type,  # Set project type if provided
         tech_stack=None,
         features_to_implement=None,
         api_specification=None,

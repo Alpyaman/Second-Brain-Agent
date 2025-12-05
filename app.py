@@ -362,6 +362,9 @@ async def generate_mvp(request: JobDescriptionRequest):
 
             tdd_content = architect_state['design_document']
             project_title = architect_state.get('project_title', request.project_name)
+            project_type = architect_state.get('project_type', 'web_app')  # Get project type from architect
+            
+            print(f"[Architect] Detected project type: {project_type}")
 
             # Save TDD to temp file
             tdd_file = temp_path / "technical_design.md"
@@ -376,10 +379,13 @@ async def generate_mvp(request: JobDescriptionRequest):
             print("[2/3] Running dev_team to generate code...")
             output_dir = temp_path / "generated_project"
 
+            # Pass project_type to dev_team
             result = run_dev_team_v2(
                 tdd_content=tdd_content,
                 output_directory=str(output_dir),
-                implementation_phase=1
+                implementation_phase=1,
+                feature_request=request.job_description[:500],  # Pass original job description as context
+                project_type=project_type  # Pass detected project type
             )
 
             print(f"[3/3] Generated {result.get('files_written', 0)} files")
