@@ -50,7 +50,7 @@ TaskType = Literal[
 MODEL_CONFIGS = {
     "google": {
         "parsing": {"model": "gemini-2.0-flash-lite", "temperature": 0.2},
-        "reasoning": {"model": "gemini-2.0-flash-thinking-exp", "temperature": 0.4},
+        "reasoning": {"model": "gemini-2.0-flash-lite", "temperature": 0.4},
         "coding": {"model": "gemini-2.5-flash-lite", "temperature": 0.3},
         "review": {"model": "gemini-2.5-flash-lite", "temperature": 0.2},
         "creative": {"model": "gemini-2.5-flash-lite", "temperature": 0.7},
@@ -143,23 +143,23 @@ class LLMFactory:
         for provider in providers:
             if provider == "google":
                 if not os.getenv("GOOGLE_API_KEY"):
-                    print(f"⚠️  Warning: GOOGLE_API_KEY not set for provider '{provider}'")
+                    print(f"Warning: GOOGLE_API_KEY not set for provider '{provider}'")
 
             elif provider == "anthropic":
                 if not ANTHROPIC_AVAILABLE:
-                    print(f"⚠️  Warning: langchain-anthropic not installed for provider '{provider}'")
+                    print(f"Warning: langchain-anthropic not installed for provider '{provider}'")
                 if not os.getenv("ANTHROPIC_API_KEY"):
-                    print(f"⚠️  Warning: ANTHROPIC_API_KEY not set for provider '{provider}'")
+                    print(f"Warning: ANTHROPIC_API_KEY not set for provider '{provider}'")
 
             elif provider == "openai":
                 if not OPENAI_AVAILABLE:
-                    print(f"⚠️  Warning: langchain-openai not installed for provider '{provider}'")
+                    print(f"Warning: langchain-openai not installed for provider '{provider}'")
                 if not os.getenv("OPENAI_API_KEY"):
-                    print(f"⚠️  Warning: OPENAI_API_KEY not set for provider '{provider}'")
+                    print(f"Warning: OPENAI_API_KEY not set for provider '{provider}'")
 
             elif provider == "ollama":
                 if not OLLAMA_AVAILABLE:
-                    print(f"⚠️  Warning: langchain-ollama not installed for provider '{provider}'")
+                    print(f"Warning: langchain-ollama not installed for provider '{provider}'")
 
     def get_llm(
         self,
@@ -226,8 +226,8 @@ class LLMFactory:
         except Exception as e:
             # Try fallback providers
             if self.fallback_providers:
-                print(f"⚠️  Failed to create LLM with {provider}: {e}")
-                print(f"🔄 Trying fallback providers: {self.fallback_providers}")
+                print(f"Failed to create LLM with {provider}: {e}")
+                print(f"Trying fallback providers: {self.fallback_providers}")
 
                 for fallback_provider in self.fallback_providers:
                     try:
@@ -238,7 +238,7 @@ class LLMFactory:
                             **kwargs
                         )
                     except Exception as fallback_error:
-                        print(f"⚠️  Fallback {fallback_provider} also failed: {fallback_error}")
+                        print(f"Fallback {fallback_provider} also failed: {fallback_error}")
                         continue
 
             # No fallback worked, raise original error
