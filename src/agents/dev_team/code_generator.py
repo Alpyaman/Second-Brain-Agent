@@ -25,42 +25,43 @@ def extract_code_blocks(markdown_text: str) -> List[Tuple[str, str, str]]:
     """
     code_blocks = []
 
-    # Split by code block markers to process each block individually
-    # Pattern to match code blocks with optional file paths
-    # Matches: ```language [optional_path]
-    pattern = r'```(\w+)(?:\s+([^\n]+))?\n(.*?)```'
+    # Pattern to match code blocks
+    # Group 1: language
+    # Group 2: optional file path (non-greedy, stops at newline)
+    # Group 3: code content
+    pattern = r'```(\w+)(?:\s+([^\n]+?))?\n(.*?)```'
 
-    # Also check for headers before code blocks (e.g., ### app/main.py)
-    lines = markdown_text.split('\n')
-    markdown_with_headers = []
-
-    for i, line in enumerate(lines):
-        # Check if line is a header that looks like a file path
-        if line.startswith('#') and any(ext in line for ext in ['.py', '.js', '.ts', '.tsx', '.jsx', '.json', '.yaml', '.yml']):
-            # Extract the file path from the header
-            file_path = line.lstrip('#').strip()
-            # Look ahead to see if next line starts a code block
-            if i + 1 < len(lines) and lines[i + 1].startswith('```'):
-                # Insert the file path into the code block header
-                lines[i + 1] = lines[i + 1].replace('```', f'```python {file_path}\n', 1)
-                continue
-        markdown_with_headers.append(line)
-
-    enhanced_markdown = '\n'.join(markdown_with_headers)
-    matches = re.findall(pattern, enhanced_markdown, re.DOTALL)
+    matches = re.findall(pattern, markdown_text, re.DOTALL)
 
     for language, file_path, code in matches:
         file_path = file_path.strip() if file_path else ""
         code = code.strip()
 
-        # If no file path in header, check first line of code for comment with filename
+        # Skip if file_path looks like code (contains special characters or keywords)
+        if file_path and any(char in file_path for char in ['(', ')', '{', '}', '=', 'import', 'export', 'function', 'const', 'let', 'var']):
+            file_path = ""
+
+        # If no valid file path, check for markdown header before code block
+        if not file_path:
+            # Look backwards from this match to find a header
+            match_start = markdown_text.find(f'```{language}')
+            if match_start > 0:
+                # Get 200 chars before the code block
+                before_block = markdown_text[max(0, match_start - 200):match_start]
+                # Look for markdown headers (### app/main.py)
+                header_pattern = r'#+\s+([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)\s*$'
+                header_matches = re.findall(header_pattern, before_block, re.MULTILINE)
+                if header_matches:
+                    file_path = header_matches[-1]  # Get the last (closest) header
+
+        # If still no file path, check first line of code for comment with filename
         if not file_path and code:
             first_line = code.split('\n')[0].strip()
             # Check for comment with filename (e.g., # app/main.py or // app/main.js)
             if first_line.startswith('#') or first_line.startswith('//'):
                 potential_path = first_line.lstrip('#/').strip()
                 # Check if it looks like a file path
-                if '.' in potential_path and '/' in potential_path and ' ' not in potential_path:
+                if '/' in potential_path and '.' in potential_path and not any(char in potential_path for char in [' ', '(', ')', '{', '}']):
                     file_path = potential_path
                     # Remove the comment line from code
                     code = '\n'.join(code.split('\n')[1:]).strip()
