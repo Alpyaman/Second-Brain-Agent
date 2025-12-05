@@ -9,7 +9,7 @@ import os
 import re
 from typing import Any, Dict
 
-from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import StateGraph, END
@@ -22,8 +22,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 def check_schedule(state: AgentState) -> Dict[str, Any]:
     """
@@ -284,11 +283,7 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
     ])
 
     # Initialize Gemini
-    llm = ChatOllama(
-        model=OLLAMA_MODEL,
-        base_url=OLLAMA_BASE_URL,
-        temperature=0.7,
-    )
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.7)
 
     # Create chain
     chain = prompt_template | llm | StrOutputParser()

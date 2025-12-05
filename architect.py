@@ -19,8 +19,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "codellama")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
+# OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "codellama")
+# OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
 
 def print_section_header(title: str):
     """Print a formatted section header."""
@@ -217,8 +219,8 @@ def main():
     args = parser.parse_args()
 
     # Check if ollama is configured
-    print(f"Using Ollama model: {OLLAMA_MODEL}")
-    print(f"Ollama base URL: {OLLAMA_BASE_URL}\n")
+    # print(f"Using Ollama model: {OLLAMA_MODEL}")
+    # print(f"Ollama base URL: {OLLAMA_BASE_URL}\n")
 
     # Determine mode
     if args.goal and args.no_interactive:

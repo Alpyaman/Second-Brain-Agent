@@ -6,14 +6,16 @@ and extract actionable information for code generation.
 """
 import re
 from typing import Dict, List, Any, Optional
-from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
+# OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 def parse_tdd_sections(tdd_content: str) -> Dict[str, str]:
     """
@@ -76,7 +78,7 @@ def extract_technology_stack(tdd_content: str) -> Dict[str, List[str]]:
         }
 
     # Use LLM to extract structured tech stack
-    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.1)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     prompt = f"""Extract the technology stack from this section and format as:
     FRONTEND: technology1, technology2
@@ -131,7 +133,7 @@ def extract_api_endpoints(tdd_content: str) -> List[Dict[str, str]]:
         return []
 
     # Use LLM to extract API endpoints
-    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.1)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     prompt = f"""Extract all API endpoints from this section. For each endpoint, provide:
     METHOD: GET/POST/PUT/DELETE/PATCH
@@ -199,7 +201,7 @@ def extract_data_model(tdd_content: str) -> Dict[str, Dict[str, str]]:
         return {}
 
     # Use LLM to extract data model
-    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.1)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     prompt = f"""Extract all entities and their fields from this data model section.
     Format each entity like:
@@ -268,7 +270,7 @@ def extract_features_to_implement(tdd_content: str, phase: Optional[int] = 1) ->
         return []
 
     # Use LLM to extract features
-    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.1)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     phase_filter = f"Focus on Phase {phase} features only." if phase else "Extract features from all phases."
 

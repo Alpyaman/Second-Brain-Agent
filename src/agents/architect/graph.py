@@ -10,7 +10,7 @@ This module implements an interactive architectural design session that:
 
 import os
 from typing import Literal
-from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langgraph.graph import StateGraph, END
@@ -22,8 +22,7 @@ from src.tools.memory import get_relevant_preferences
 
 load_dotenv()
 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 def parse_job_description(state: ArchitectState) -> ArchitectState:
     """
@@ -38,7 +37,7 @@ def parse_job_description(state: ArchitectState) -> ArchitectState:
 
     print("Parsing job description to extract requirements...")
 
-    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.2)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.2)
 
     system_prompt = """You are an expert at analyzing freelance job postings and extracting structured requirements.
 
@@ -364,7 +363,7 @@ def generate_design(state: ArchitectState) -> ArchitectState:
         Please refine the Technical Design Document based on the feedback provided."""
 
     # Initialize Gemini
-    llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.4)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.4)
 
     # Generate the design
     messages = [("system", system_prompt), ("user", user_prompt)]

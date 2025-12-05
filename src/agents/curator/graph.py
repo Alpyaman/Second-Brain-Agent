@@ -16,7 +16,7 @@ from typing import Dict, List, Any
 import traceback
 
 from langgraph.graph import StateGraph, END
-from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from langchain_tavily import TavilySearch
@@ -28,8 +28,7 @@ from src.ingestion.dispatcher import dispatch_batch_ingestion
 load_dotenv()
 
 # Configuration
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
 
@@ -104,11 +103,7 @@ def generate_search_queries(state: CuratorState) -> Dict[str, Any]:
             # Use LLM to generate queries
             print("Using LLM to generate custom search queries...")
 
-            llm = ChatOllama(
-                model=OLLAMA_MODEL,
-                base_url=OLLAMA_BASE_URL,
-                temperature=0.7,
-            )
+            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.7)
 
             # Use structured output with Pydantic model
             structured_llm = llm.with_structured_output(SearchQueryBatch)
@@ -302,11 +297,7 @@ def filter_and_categorize(state: CuratorState) -> Dict[str, Any]:
 
         print("Initializing LLM with structured output...")
 
-        llm = ChatOllama(
-            model=OLLAMA_MODEL,
-            base_url=OLLAMA_BASE_URL,
-            temperature=0.3,
-        )
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
 
         # Use structured output with Pydantic model
         structured_llm = llm.with_structured_output(CuratorFilterResult)
