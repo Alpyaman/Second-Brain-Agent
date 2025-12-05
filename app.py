@@ -379,7 +379,7 @@ async def generate_mvp(request: JobDescriptionRequest):
             result = run_dev_team_v2(
                 tdd_content=tdd_content,
                 output_directory=str(output_dir),
-                phase=1
+                implementation_phase=1
             )
 
             print(f"[3/3] Generated {result.get('files_written', 0)} files")
