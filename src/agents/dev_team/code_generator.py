@@ -37,9 +37,40 @@ def extract_code_blocks(markdown_text: str) -> List[Tuple[str, str, str]]:
         file_path = file_path.strip() if file_path else ""
         code = code.strip()
 
-        # Skip if file_path looks like code (contains special characters or keywords)
-        if file_path and any(char in file_path for char in ['(', ')', '{', '}', '=', 'import', 'export', 'function', 'const', 'let', 'var']):
-            file_path = ""
+        # Validate file_path - it must look like a valid file path
+        if file_path:
+            # Remove quotes if present (e.g., 'file.tsx', "file.py")
+            file_path = file_path.strip("'\"`")
+            
+            # Skip if file_path looks like code directives or keywords
+            code_directives = [
+                'use client', 'use server', 'use strict', 'use module',
+                'import', 'export', 'function', 'const', 'let', 'var',
+                'from', 'require', 'return', 'class', 'interface', 'type'
+            ]
+            
+            # Check if it's a code directive (case-insensitive)
+            if file_path.lower() in [d.lower() for d in code_directives]:
+                file_path = ""
+            
+            # Skip if it contains code-like patterns
+            if file_path and any(char in file_path for char in ['(', ')', '{', '}', '=', ':', ';']):
+                file_path = ""
+            
+            # Skip if it doesn't look like a file path (missing extension or has invalid chars)
+            if file_path:
+                # Must have a file extension (contain a dot followed by letters/numbers)
+                if not re.search(r'\.[a-zA-Z0-9]+$', file_path):
+                    file_path = ""
+                # Must not start with special characters
+                elif file_path.startswith(('#', '//', '/*', '*', '!', '@')):
+                    file_path = ""
+                # Must not contain spaces (unless it's a valid path)
+                elif ' ' in file_path and not ('/' in file_path or '\\' in file_path):
+                    file_path = ""
+                # Must not look like a comment or string literal
+                elif file_path.startswith("'") or file_path.startswith('"'):
+                    file_path = ""
 
         # If no valid file path, check for markdown header before code block
         if not file_path:
@@ -58,13 +89,22 @@ def extract_code_blocks(markdown_text: str) -> List[Tuple[str, str, str]]:
         if not file_path and code:
             first_line = code.split('\n')[0].strip()
             # Check for comment with filename (e.g., # app/main.py or // app/main.js)
+            # But skip if it looks like a directive or normal comment
             if first_line.startswith('#') or first_line.startswith('//'):
                 potential_path = first_line.lstrip('#/').strip()
-                # Check if it looks like a file path
-                if '/' in potential_path and '.' in potential_path and not any(char in potential_path for char in [' ', '(', ')', '{', '}']):
-                    file_path = potential_path
-                    # Remove the comment line from code
-                    code = '\n'.join(code.split('\n')[1:]).strip()
+                # Remove any leading path indicators
+                potential_path = potential_path.lstrip('/').strip()
+                
+                # Validate it looks like a file path
+                if potential_path and '/' in potential_path and '.' in potential_path:
+                    # Check it's not a code directive
+                    if potential_path.lower() not in [d.lower() for d in code_directives]:
+                        # Check it doesn't contain invalid characters
+                        if not any(char in potential_path for char in ['(', ')', '{', '}', '=', ':', ';', "'", '"']):
+                            file_path = potential_path
+                            # Remove the comment line from code
+                            code = '\n'.join(code.split('\n')[1:]).strip()
+        
         if code:
             code_blocks.append((language, file_path, code))
 
@@ -132,9 +172,17 @@ def extract_and_organize_code(
         # Determine file path
         if file_path:
             # Clean up the file path
-            file_path = file_path.strip('`').strip()
+            file_path = file_path.strip('`').strip('"\'').strip()
             # Remove any leading slashes or dots
             file_path = file_path.lstrip('./')
+            
+            # Final validation - ensure it's a valid file path
+            # Must have an extension
+            if not re.search(r'\.[a-zA-Z0-9]+$', file_path):
+                file_path = ""
+            # Must not contain invalid characters for filenames
+            elif any(char in file_path for char in ['<', '>', '|', ':', '?', '*']):
+                file_path = ""
         else:
             # Generate a file path based on language
             ext = get_extension_for_language(lang)

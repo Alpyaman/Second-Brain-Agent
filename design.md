@@ -6,86 +6,95 @@
 Generating professional Technical Design Document from job posting...
 
 Parsing job description to extract requirements...
-Parsed job description: Machine Learning Engineer for Deal Intelligence Platform (Pilot Project)
-Extracted 9 features and 9 tech requirements
+Parsed job description: Production-Grade Document Extraction Application
+Extracted 7 features and 15 tech requirements
 Analyzing architectural goal...
-Goal: Project: Machine Learning Engineer for Deal Intelligence Platform (Pilot Project)
+Goal: Project: Production-Grade Document Extraction Application
 
-    Description: AI-driven platform for deal origination, connecting companies with investors and acquirers. Focus on initial pilot phase, creating core intelligence layer, and building a small prototype.
+    Description: Build a robust application for professional services and consulting firms to upload PDF documents, automatically extract relevant data fields, structure information, and provide clean Excel or CSV output for data analysis.
 
     Required Features:
-    - Company and investor embeddings generation
-- Basic matching model
-- Small deal graph representation
-- Simple scoring function (fit score)
-- Extraction of text from company and investor data
-- Generation of embeddings using specified tools
-- Implementation of a simple vector search or similarity scoring mechanism
-- Outputting a list of "best-matching investors for each company."
-- Small graph structure and a simple centrality score (Bonus)
+    - Multi-file Upload
+- AI-Powered Extraction
+- Field-Driven Extraction
+- Configurable Extraction Rules
+- Data Consolidation
+- Output Delivery
+- Logging and Error Handling
 
     Technical Requirements:
-    - Python
-- Machine Learning Fundamentals
-- OpenAI
-- HuggingFace
-- Sentence Transformers
-- Faiss
-- pgvector
-- Logistic regression
-- XGBoost
+    - Python or Node.js
+- LLM-based extraction (e.g.
+- GPT/VLM APIs)
+- OCR tools (e.g.
+- Tesseract)
+- Document AI services (e.g.
+- Azure Form Recognizer
+- AWS Textract
+- Google Document AI)
+- Basic UI or API gateway
+- openpyxl or pandas
+- AI document extraction/OCR automation
+- production-grade SaaS components
+- prompt-based extraction/schema-guided parsing
+- handling messy PDF layouts
 
-    Timeline/Budget: Fixed budget of $150ΓÇô$300 for Milestone 1, depending on experience. Implied need for quick delivery of small results.
+    Timeline/Budget: Not explicitly stated in the provided text. Deliverables include a working PDF-to-Excel extraction module with API/UI, backend logic for defining extraction fields, Excel output generator, deployment instructions, handover call, documentation, and maintainability notes. Future milestones are separate.
 Retrieving code context and preferences...
 Fetching coding preferences...
-Searching coding_brain for: 'Project: Machine Learning Engineer for Deal Intelligence Platform (Pilot Project)
+Searching coding_brain for: 'Project: Production-Grade Document Extraction Application
 
-    Description: AI-driven platform for deal origination, connecting companies with investors and acquirers. Focus on initial pilot phase, creating core intelligence layer, and building a small prototype.
+    Description: Build a robust application for professional services and consulting firms to upload PDF documents, automatically extract relevant data fields, structure information, and provide clean Excel or CSV output for data analysis.
 
     Required Features:
-    - Company and investor embeddings generation
-- Basic matching model
-- Small deal graph representation
-- Simple scoring function (fit score)
-- Extraction of text from company and investor data
-- Generation of embeddings using specified tools
-- Implementation of a simple vector search or similarity scoring mechanism
-- Outputting a list of "best-matching investors for each company."
-- Small graph structure and a simple centrality score (Bonus)
+    - Multi-file Upload
+- AI-Powered Extraction
+- Field-Driven Extraction
+- Configurable Extraction Rules
+- Data Consolidation
+- Output Delivery
+- Logging and Error Handling
 
     Technical Requirements:
-    - Python
-- Machine Learning Fundamentals
-- OpenAI
-- HuggingFace
-- Sentence Transformers
-- Faiss
-- pgvector
-- Logistic regression
-- XGBoost
+    - Python or Node.js
+- LLM-based extraction (e.g.
+- GPT/VLM APIs)
+- OCR tools (e.g.
+- Tesseract)
+- Document AI services (e.g.
+- Azure Form Recognizer
+- AWS Textract
+- Google Document AI)
+- Basic UI or API gateway
+- openpyxl or pandas
+- AI document extraction/OCR automation
+- production-grade SaaS components
+- prompt-based extraction/schema-guided parsing
+- handling messy PDF layouts
 
-    Timeline/Budget: Fixed budget of $150ΓÇô$300 for Milestone 1, depending on experience. Implied need for quick delivery of small results.'
+    Timeline/Budget: Not explicitly stated in the provided text. Deliverables include a working PDF-to-Excel extraction module with API/UI, backend logic for defining extraction fields, Excel output generator, deployment instructions, handover call, documentation, and maintainability notes. Future milestones are separate.'
 No code examples found in coding_brain
 Generating architectural design...
-Design v1 generated 30316 characters.
+Design v1 generated 41028 characters.
 
 ================================================================================
   ARCHITECTURAL DESIGN DOCUMENT (v1)
 ================================================================================
 
-# Technical Design Document: Deal Intelligence Platform (Pilot Project)
+# Technical Design Document: Production-Grade Document Extraction Application
 
 **Version:** 1.0
 **Date:** October 26, 2023
-**Author:** [Your Name/Company Name]
 
 ---
 
 ## 1. EXECUTIVE SUMMARY
 
-This document outlines the technical design for the initial pilot phase of an AI-driven Deal Intelligence Platform. The platform aims to revolutionize deal origination by intelligently connecting companies seeking investment or acquisition with suitable investors and acquirers. This pilot project focuses on building the core intelligence layer, demonstrating key functionalities, and delivering a functional prototype. The primary objectives are to generate embeddings for companies and investors, develop a basic matching model, represent deal relationships in a small graph, and implement a scoring mechanism to identify the best investor matches for companies.
+This document outlines the technical design for a Production-Grade Document Extraction Application. This application is engineered to serve professional services and consulting firms by automating the extraction of critical data from PDF documents. The core functionality involves uploading multiple PDF files, leveraging advanced AI and OCR technologies to intelligently extract predefined data fields, structuring this information, and delivering it in a clean, analysis-ready format such as Excel or CSV.
 
-The success of this pilot will be measured by the successful generation of meaningful embeddings, the accuracy of the initial matching model, and the ability to present actionable investor recommendations. The expected business value lies in demonstrating the potential of AI to significantly streamline and enhance the deal origination process, reducing manual effort and improving the quality of connections. This pilot is designed for rapid delivery within a fixed budget, emphasizing quick iteration and tangible results.
+The primary objective is to significantly reduce manual data entry and processing time, thereby increasing efficiency and accuracy for our clients. Key success criteria include the ability to handle a wide variety of PDF layouts, achieve high extraction accuracy, provide a seamless user experience (via a basic UI or API gateway), and ensure the system is robust, scalable, and maintainable for production environments. The expected business value lies in empowering firms to derive faster insights from their documents, reduce operational costs associated with data handling, and improve overall data-driven decision-making.
+
+This solution will be built using a modern technology stack, prioritizing flexibility, performance, and ease of integration. The initial phase will focus on delivering a core, functional PDF-to-Excel extraction module with essential features, an API or basic UI for interaction, and robust backend logic for defining and managing extraction rules. Subsequent phases will focus on further enhancements, optimization, and polish.
 
 ---
 
@@ -93,33 +102,32 @@ The success of this pilot will be measured by the successful generation of meani
 
 ### 2.1 Functional Requirements
 
-*   **FR1: Company and Investor Embeddings Generation:** The system shall generate numerical vector representations (embeddings) for companies and investors based on their textual data.
-*   **FR2: Basic Matching Model:** The system shall implement a foundational model to assess the compatibility between companies and investors.
-*   **FR3: Small Deal Graph Representation:** The system shall establish a basic graph structure to represent relationships between companies, investors, and potential deals.
-*   **FR4: Simple Scoring Function (Fit Score):** The system shall calculate a "fit score" indicating the suitability of an investor for a given company.
-*   **FR5: Text Extraction:** The system shall extract relevant textual information from company and investor data sources (e.g., descriptions, profiles).
-*   **FR6: Embedding Generation Tool Integration:** The system shall utilize specified tools (OpenAI, HuggingFace Sentence Transformers) for generating embeddings.
-*   **FR7: Vector Search/Similarity Scoring:** The system shall implement a mechanism to perform vector search or calculate similarity scores between company and investor embeddings.
-*   **FR8: Output Best Matches:** The system shall output a ranked list of the "best-matching investors for each company."
-*   **FR9 (Bonus): Simple Centrality Score:** The system shall calculate a simple centrality score for nodes within the deal graph.
+*   **FR1: Multi-file Upload:** The system shall allow users to upload one or more PDF documents simultaneously.
+*   **FR2: AI-Powered Extraction:** The system shall utilize AI models (LLMs, Document AI services) to understand document content and context for intelligent data extraction.
+*   **FR3: Field-Driven Extraction:** Users shall be able to define specific data fields they wish to extract from documents.
+*   **FR4: Configurable Extraction Rules:** The system shall provide mechanisms to configure extraction rules, potentially including regular expressions, keyword matching, or schema-guided parsing, to guide the AI and OCR processes.
+*   **FR5: Data Consolidation:** Extracted data from multiple documents shall be consolidated into a single, structured dataset.
+*   **FR6: Output Delivery:** The system shall generate output files in Excel (.xlsx) or CSV (.csv) formats.
+*   **FR7: Logging and Error Handling:** The system shall log all significant operations, errors, and extraction successes/failures. Users should be notified of any processing issues.
+*   **FR8: Document Type Handling:** The system should be capable of handling various PDF types, including scanned documents (requiring OCR) and digitally generated PDFs, and accommodate messy or inconsistent layouts.
 
 ### 2.2 Non-Functional Requirements
 
-*   **NFR1: Performance:** The system should be able to generate embeddings and perform matching for a small dataset within a reasonable timeframe (e.g., minutes to hours for initial runs).
-*   **NFR2: Scalability (Future Consideration):** While this is a pilot, the architecture should be designed with future scalability in mind, particularly for embedding generation and vector search.
-*   **NFR3: Maintainability:** Code should be well-structured, documented, and follow Python best practices for ease of maintenance and future development.
-*   **NFR4: Usability (for prototype):** The output of the prototype should be clear and easily interpretable by stakeholders.
-*   **NFR5: Security:** While not a primary focus for this pilot, sensitive data handling should be considered in principle.
+*   **NFR1: Performance:** Extraction of data from a single document should ideally complete within a reasonable timeframe (e.g., < 1-2 minutes for typical documents), with overall processing time scaling predictably with the number of documents.
+*   **NFR2: Scalability:** The architecture should be designed to handle an increasing volume of documents and users without significant degradation in performance.
+*   **NFR3: Reliability:** The system should be highly available and resilient to failures, with robust error handling and recovery mechanisms.
+*   **NFR4: Security:** Data uploaded by users must be protected both in transit and at rest. Access controls should be implemented if a UI is provided.
+*   **NFR5: Maintainability:** The codebase should be well-structured, documented, and adhere to best practices to facilitate future updates and maintenance.
+*   **NFR6: Usability:** The interface (UI or API) should be intuitive and easy to use for defining extraction tasks and retrieving results.
 
 ### 2.3 Constraints and Assumptions
 
-*   **Constraint 1: Budget:** A fixed budget of $150-$300 for Milestone 1 necessitates efficient use of resources and potentially free/open-source tools where feasible.
-*   **Constraint 2: Timeline:** Implied need for quick delivery of small results suggests an agile approach and focus on core functionality.
-*   **Constraint 3: Technology Stack:** The use of Python, specific ML libraries (Sentence Transformers, Faiss), database (pgvector), and ML models (Logistic Regression, XGBoost) is mandated.
-*   **Assumption 1: Data Availability:** Assumes access to a reasonably clean and structured dataset for companies and investors, including descriptive text.
-*   **Assumption 2: Data Format:** Assumes data can be processed into a format suitable for text extraction and embedding generation.
-*   **Assumption 3: OpenAI API Access:** Assumes access to OpenAI API keys and understanding of their usage policies and costs.
-*   **Assumption 4: Pilot Scope:** This pilot focuses on core intelligence and a small prototype, not a full-fledged production system.
+*   **Constraint 1: Technology Stack:** The primary backend language will be Python. Specific AI/OCR services will be chosen based on a balance of capability, cost, and ease of integration.
+*   **Constraint 2: Budget/Timeline:** While not explicitly stated, the initial delivery should focus on a Minimum Viable Product (MVP) that demonstrates core functionality. Future enhancements will be considered in separate phases.
+*   **Assumption 1: PDF Quality:** While the system aims to handle messy PDFs, extremely low-quality scans or heavily corrupted files may lead to reduced extraction accuracy.
+*   **Assumption 2: Data Field Definition:** The accuracy of extraction is highly dependent on the clarity and consistency of the data fields defined by the user.
+*   **Assumption 3: API Key Management:** Access to third-party AI/Document AI services will require API keys, which will need to be securely managed.
+*   **Assumption 4: User Expertise:** Users defining extraction rules may have varying levels of technical expertise. The system should offer both simple and advanced configuration options.
 
 ---
 
@@ -127,70 +135,79 @@ The success of this pilot will be measured by the successful generation of meani
 
 ### 3.1 High-Level Architecture Diagram Description
 
-The system will follow a modular, data-centric architecture. The core components include:
+The system will follow a microservices-oriented or modular monolithic architecture, prioritizing separation of concerns. The core components include:
 
-1.  **Data Ingestion & Preprocessing:** Responsible for loading and cleaning raw company and investor data.
-2.  **Text Extraction & Feature Engineering:** Extracts relevant textual features from the preprocessed data.
-3.  **Embedding Generation Service:** Utilizes specified tools to generate vector embeddings for companies and investors.
-4.  **Vector Database:** Stores the generated embeddings for efficient similarity search (pgvector).
-5.  **Matching & Scoring Engine:** Implements the matching logic, similarity scoring, and the fit score calculation.
-6.  **Deal Graph Module (Bonus):** Manages the representation and analysis of the deal graph.
-7.  **Output & Reporting:** Generates the final list of best-matching investors.
+1.  **Frontend/API Gateway:** Handles user interaction (upload, configuration) and acts as the entry point for requests.
+2.  **Document Ingestion Service:** Manages the upload process, stores temporary files, and orchestrates the extraction workflow.
+3.  **Extraction Orchestration Service:** Coordinates the calls to various extraction engines (OCR, AI models) based on configured rules.
+4.  **OCR Service:** Handles the conversion of image-based PDFs (scans) into machine-readable text.
+5.  **AI Extraction Service:** Leverages LLMs and Document AI services to parse structured data from the OCR'd text or directly from digital PDFs.
+6.  **Rule Engine:** Manages and applies user-defined extraction rules.
+7.  **Data Consolidation Service:** Aggregates extracted data from individual documents.
+8.  **Output Generation Service:** Formats the consolidated data into Excel or CSV.
+9.  **Logging & Monitoring Service:** Collects logs and metrics from all components.
+10. **Storage:** For temporary document storage, processed data, and potentially configuration.
 
-```mermaid
-graph TD
-    A[Raw Company/Investor Data] --> B(Data Ingestion & Preprocessing)
-    B --> C(Text Extraction & Feature Engineering)
-    C --> D(Embedding Generation Service)
-    D --> E(Vector Database - pgvector)
-    C --> F(Matching & Scoring Engine)
-    E --> F
-    F --> G(Deal Graph Module - Bonus)
-    F --> H(Output: Best Investor Matches)
-    G --> H
-```
+*(A visual diagram would be included here in a full TDD, showing these components and their interactions.)*
 
 ### 3.2 System Components and Their Responsibilities
 
-*   **Data Ingestion & Preprocessing:**
-    *   **Responsibility:** Load data from various sources (e.g., CSV, JSON). Clean and standardize data (handle missing values, normalize text).
-*   **Text Extraction & Feature Engineering:**
-    *   **Responsibility:** Identify and extract key textual fields (e.g., company description, investor focus, industry). Potentially perform basic text cleaning (stopwords, punctuation).
-*   **Embedding Generation Service:**
-    *   **Responsibility:** Interface with OpenAI and HuggingFace Sentence Transformers to generate high-quality embeddings from extracted text. Manage API calls and model loading.
-*   **Vector Database (pgvector):**
-    *   **Responsibility:** Store company and investor embeddings. Provide efficient indexing and similarity search capabilities.
-*   **Matching & Scoring Engine:**
-    *   **Responsibility:**
-        *   Implement similarity search using Faiss or pgvector's capabilities.
-        *   Calculate cosine similarity or other distance metrics between company and investor embeddings.
-        *   Implement a basic matching model (e.g., Logistic Regression on similarity scores and other features) or a direct scoring function.
-        *   Calculate the "fit score."
-*   **Deal Graph Module (Bonus):**
-    *   **Responsibility:** Represent entities (companies, investors) and relationships (e.g., "invests in," "seeks funding from") as a graph. Calculate simple centrality metrics.
-*   **Output & Reporting:**
-    *   **Responsibility:** Format and present the final output, including the ranked list of best-matching investors for each company.
+*   **Frontend/API Gateway:**
+    *   **Responsibility:** User interface for file uploads, rule configuration, and initiating extraction jobs. If an API gateway, it routes requests to appropriate backend services.
+    *   **Technology:** Flask/FastAPI (Python) for API Gateway, or a simple HTML/JavaScript frontend.
+*   **Document Ingestion Service:**
+    *   **Responsibility:** Receives uploaded PDF files, performs initial validation, stores them temporarily (e.g., S3, local disk), and triggers the extraction workflow by publishing a message to a queue.
+    *   **Technology:** Python (e.g., Flask/FastAPI).
+*   **Extraction Orchestration Service:**
+    *   **Responsibility:** Manages the lifecycle of an extraction job. Determines the necessary steps (OCR, AI extraction), calls the appropriate services, and handles retry logic.
+    *   **Technology:** Python.
+*   **OCR Service:**
+    *   **Responsibility:** Processes PDF pages to extract text using OCR. Detects if OCR is needed (e.g., based on PDF type or user configuration).
+    *   **Technology:** Tesseract OCR (potentially via a Python wrapper like `pytesseract`), or integrated within cloud Document AI services.
+*   **AI Extraction Service:**
+    *   **Responsibility:** Takes OCR'd text or PDF content and applies AI models (LLMs, specialized Document AI) to extract specific fields based on prompts and defined schemas.
+    *   **Technology:** Python, interacting with APIs like OpenAI (GPT-4/Vision), Azure Form Recognizer, AWS Textract, or Google Document AI.
+*   **Rule Engine:**
+    *   **Responsibility:** Stores, retrieves, and applies user-defined extraction rules (e.g., field names, data types, regex patterns, keywords).
+    *   **Technology:** Python, potentially with a simple database for rule storage.
+*   **Data Consolidation Service:**
+    *   **Responsibility:** Gathers results from individual document extractions and merges them into a unified structure. Handles potential schema conflicts or missing data.
+    *   **Technology:** Python (e.g., using Pandas).
+*   **Output Generation Service:**
+    *   **Responsibility:** Takes the consolidated data and generates the final output file (Excel or CSV).
+    *   **Technology:** Python (`openpyxl` for Excel, `csv` module for CSV, or Pandas).
+*   **Logging & Monitoring Service:**
+    *   **Responsibility:** Centralized logging of events, errors, and performance metrics.
+    *   **Technology:** Python `logging` module, potentially integrated with ELK stack or cloud monitoring services.
+*   **Storage:**
+    *   **Responsibility:** Temporary storage for uploaded documents, intermediate processing results, and final output files.
+    *   **Technology:** AWS S3, Azure Blob Storage, or a robust local filesystem.
 
 ### 3.3 Component Interactions and Data Flow
 
-1.  Raw data is ingested and preprocessed.
-2.  Relevant text is extracted and potentially cleaned.
-3.  The extracted text is fed to the Embedding Generation Service, which produces vector embeddings.
-4.  These embeddings are stored in the pgvector database.
-5.  For a given company, its embedding is retrieved from the database.
-6.  The Matching & Scoring Engine queries the Vector Database to find investors with similar embeddings (using Faiss or pgvector's ANN capabilities).
-7.  The engine calculates similarity scores and applies the matching model/scoring function to derive a "fit score."
-8.  (Bonus) The Deal Graph Module updates the graph with new relationships and calculates centrality.
-9.  The engine compiles the ranked list of investors based on their fit scores for the company.
-10. The final output is presented.
+1.  **Upload:** User uploads PDF(s) via Frontend/API Gateway -> Document Ingestion Service.
+2.  **Ingestion:** Document Ingestion Service stores PDF, publishes "new_document" event to a message queue.
+3.  **Orchestration:** Extraction Orchestration Service consumes event, retrieves PDF, determines processing steps (e.g., OCR needed?).
+4.  **OCR (if needed):** Orchestration Service sends PDF page(s) to OCR Service. OCR Service returns text.
+5.  **AI Extraction:** Orchestration Service sends text (or PDF content) and extraction rules to AI Extraction Service.
+6.  **Rule Application:** AI Extraction Service consults Rule Engine for specific field definitions and parsing logic.
+7.  **Extraction Result:** AI Extraction Service returns extracted data for the document.
+8.  **Consolidation:** Orchestration Service sends extracted data to Data Consolidation Service.
+9.  **Output Generation:** Once all documents are processed, Orchestration Service triggers Output Generation Service with consolidated data.
+10. **Delivery:** Output Generation Service creates Excel/CSV file and makes it available for download via Frontend/API Gateway.
+11. **Logging:** All services send logs to Logging & Monitoring Service.
+
+**Data Flow:** PDF -> Raw Text (OCR) -> Structured Data (AI Extraction) -> Consolidated Data -> Output File (Excel/CSV).
 
 ### 3.4 Architectural Patterns and Rationale
 
-*   **Modular Design:** Each component is designed to be independent, allowing for easier development, testing, and future upgrades. This aligns with good software engineering practices.
-*   **Data-Centric Architecture:** The system is designed around the data (embeddings) and how it's processed and queried. This is crucial for ML-driven applications.
-*   **Microservices (Consideration for Future):** While not strictly required for this pilot, the modular design lays the groundwork for potential future migration to microservices if the platform scales significantly.
-*   **Separation of Concerns:** Embedding generation, storage, and matching logic are separated, promoting maintainability and testability.
-*   **Use of Specialized Libraries:** Leveraging libraries like Sentence Transformers for embeddings and Faiss/pgvector for vector search is a pragmatic approach to utilize state-of-the-art tools efficiently.
+*   **Modular Monolith / Microservices:** We will start with a modular monolithic approach in Python for simplicity and faster initial development. Key functionalities (ingestion, extraction, output) will be distinct modules. This can be refactored into microservices later if scalability demands it.
+*   **Event-Driven Architecture:** Using a message queue (e.g., RabbitMQ, Kafka, or AWS SQS) for inter-service communication (especially for triggering extraction jobs) decouples services, improves resilience, and allows for asynchronous processing.
+*   **API-First Design:** Even with a basic UI, defining clear APIs for each service allows for easier integration and future expansion (e.g., programmatic access).
+*   **Strategy Pattern (for Extraction):** The AI Extraction Service will implement the Strategy pattern to easily swap between different LLM providers (OpenAI, Anthropic) or Document AI services (Azure, AWS, Google) based on configuration or performance.
+*   **Command Query Responsibility Segregation (CQRS) - Implicit:** The system naturally separates the "command" of uploading and processing documents from the "query" of retrieving the final output.
+
+**Rationale:** This approach balances rapid development with long-term maintainability and scalability. Python is chosen for its extensive libraries for AI, data processing, and web development. Cloud-native services offer powerful, managed solutions for OCR and AI extraction, reducing infrastructure overhead.
 
 ---
 
@@ -198,39 +215,60 @@ graph TD
 
 ### 4.1 Recommended Technologies with Justification
 
-*   **Programming Language:** Python (Mandated) - Rich ecosystem for ML, data science, and web development.
-*   **Machine Learning Fundamentals:** Core understanding is required for model implementation and evaluation.
-*   **OpenAI:** For leveraging powerful pre-trained language models (e.g., text-davinci-003, GPT-3.5 Turbo) for embedding generation or potentially text summarization/feature extraction. *Justification: State-of-the-art performance for various NLP tasks.*
-*   **HuggingFace (Sentence Transformers):** For efficient and high-quality sentence/text embedding generation using transformer models. *Justification: Open-source, performant, and widely adopted for embedding tasks.*
-*   **Faiss:** A library for efficient similarity search and clustering of dense vectors. *Justification: Highly optimized for large-scale vector search, can be used locally or integrated.*
-*   **pgvector:** PostgreSQL extension for storing, indexing, and searching vector embeddings. *Justification: Integrates vector search directly into a robust relational database, simplifying data management and allowing SQL queries alongside vector search.*
-*   **Logistic Regression & XGBoost:** (Mandated) For building the basic matching model. *Justification: Widely used, interpretable (Logistic Regression), and powerful (XGBoost) algorithms for classification/regression tasks.*
+*   **Backend Language:** **Python 3.9+**
+    *   **Justification:** Rich ecosystem for AI/ML (NumPy, SciPy, Scikit-learn), data manipulation (Pandas), web frameworks (Flask, FastAPI), and document processing libraries. Widely adopted in the data science and automation space.
+*   **Web Framework/API Gateway:** **FastAPI**
+    *   **Justification:** High performance, asynchronous capabilities, automatic data validation (Pydantic), and automatic API documentation (Swagger UI). Excellent for building robust APIs.
+*   **AI Document Extraction:**
+    *   **Primary:** **OpenAI GPT-4/GPT-3.5 Turbo (with Vision API if needed)**
+        *   **Justification:** State-of-the-art LLMs capable of understanding complex context and extracting structured data via prompt engineering. GPT-4V can directly process image-based PDFs.
+    *   **Secondary/Alternative:** **Azure Form Recognizer / AWS Textract / Google Document AI**
+        *   **Justification:** Specialized services optimized for document understanding, layout analysis, and form extraction. Offer pre-trained models and custom model training capabilities. Choice depends on specific document types and cost-effectiveness.
+*   **OCR Tools:** **Tesseract OCR (via pytesseract)** or integrated cloud services.
+    *   **Justification:** Tesseract is a powerful open-source OCR engine. Cloud services (Textract, Form Recognizer, Document AI) often bundle OCR capabilities, which might be more efficient if using those services.
+*   **Data Manipulation & Output:** **Pandas & openpyxl**
+    *   **Justification:** Pandas provides powerful data structures and analysis tools. `openpyxl` is the standard Python library for reading/writing `.xlsx` files. Pandas can also directly write to CSV.
+*   **Message Queue (for asynchronous processing):** **RabbitMQ** or **AWS SQS**
+    *   **Justification:** Enables decoupling of services, handling bursts of requests, and implementing retry mechanisms. RabbitMQ is a robust open-source option; SQS is a managed cloud service.
+*   **Storage:** **AWS S3 / Azure Blob Storage**
+    *   **Justification:** Scalable, durable, and cost-effective object storage for uploaded documents and intermediate files.
+*   **Containerization:** **Docker**
+    *   **Justification:** Ensures consistent environments across development, testing, and production. Simplifies deployment and scaling.
+*   **Deployment/Orchestration:** **Docker Compose** (for simpler deployments) or **Kubernetes** (for production-grade scalability). **CI/CD:** **GitHub Actions / GitLab CI / Jenkins**.
+    *   **Justification:** Automates build, test, and deployment processes. Kubernetes provides robust orchestration for containerized applications.
 
-### 4.2 Frontend Technologies (Not Applicable for Pilot)
+### 4.2 Frontend Technologies (if applicable)
 
-This pilot focuses on the backend intelligence layer and a prototype output. A frontend is not required at this stage.
+*   **Option 1 (Basic UI):** **HTML, CSS, JavaScript (Vanilla or with a lightweight framework like Alpine.js)**
+    *   **Justification:** Sufficient for a simple upload interface and status display without adding significant complexity.
+*   **Option 2 (API Gateway Focus):** No dedicated frontend, direct interaction via API.
+    *   **Justification:** Simplest approach if the primary use case is programmatic integration.
 
 ### 4.3 Backend Technologies
 
-*   **Python Framework:** Flask or FastAPI (for potential API exposure if needed, but not strictly required for the pilot's core functionality). Flask is simpler for rapid prototyping.
-*   **Data Handling:** Pandas for data manipulation.
-*   **Numerical Computation:** NumPy.
+*   **Core Logic:** Python 3.9+
+*   **Web Framework:** FastAPI
+*   **Libraries:** Pandas, openpyxl, Pydantic, Requests, boto3 (for AWS), google-cloud-aiplatform / google-cloud-documentai (for Google), azure-ai-formrecognizer (for Azure), pytesseract.
 
 ### 4.4 Database and Storage Solutions
 
-*   **Primary Database:** PostgreSQL with the `pgvector` extension. *Justification: Combines relational data management with efficient vector storage and search capabilities.*
-*   **Local Storage:** For intermediate data files (e.g., CSVs) during development.
+*   **Configuration/Metadata Storage:** **PostgreSQL** or **SQLite** (for simpler deployments).
+    *   **Justification:** Relational database for storing user configurations, extraction rules, job statuses, and metadata. PostgreSQL offers robustness and scalability; SQLite is simpler for single-instance setups.
+*   **Document/Temporary File Storage:** **AWS S3 / Azure Blob Storage**
+    *   **Justification:** Scalable, durable, and cost-effective object storage.
 
 ### 4.5 DevOps and Deployment Tools
 
-*   **Version Control:** Git (GitHub/GitLab/Bitbucket).
-*   **Environment Management:** `venv` or `conda`.
-*   **Containerization (Optional for Pilot):** Docker (for consistency, but may be overkill for a small pilot).
-*   **CI/CD (Future Consideration):** GitHub Actions, GitLab CI.
+*   **Containerization:** Docker
+*   **Orchestration:** Docker Compose (initial), Kubernetes (future)
+*   **CI/CD:** GitHub Actions / GitLab CI
+*   **Infrastructure as Code (IaC):** Terraform (optional, for cloud resources)
 
 ### 4.6 Third-Party Services and Integrations
 
-*   **OpenAI API:** For accessing their embedding models. Requires API key management.
+*   **LLM APIs:** OpenAI API, Anthropic API (optional)
+*   **Document AI Services:** Azure Form Recognizer, AWS Textract, Google Document AI
+*   **Cloud Provider Services:** AWS (S3, SQS, EC2/ECS/EKS), Azure (Blob Storage, Service Bus, VMs/AKS), GCP (Cloud Storage, Pub/Sub, GKE).
 
 ---
 
@@ -238,76 +276,138 @@ This pilot focuses on the backend intelligence layer and a prototype output. A f
 
 ### 5.1 Key Entities and Their Attributes
 
-*   **Company:**
-    *   `company_id` (Unique Identifier)
-    *   `name` (String)
-    *   `description` (Text - source for embedding)
-    *   `industry` (String)
-    *   `funding_stage` (String)
-    *   `company_embedding` (Vector - generated)
-    *   `other_textual_features` (Text)
-*   **Investor:**
-    *   `investor_id` (Unique Identifier)
-    *   `name` (String)
-    *   `focus_areas` (Text - source for embedding)
-    *   `investment_stage` (String)
-    *   `investor_embedding` (Vector - generated)
-    *   `other_textual_features` (Text)
-*   **Deal (Optional for Graph):**
-    *   `deal_id` (Unique Identifier)
-    *   `company_id` (Foreign Key)
-    *   `investor_id` (Foreign Key)
-    *   `status` (String - e.g., "potential," "active," "closed")
+*   **Document:**
+    *   `document_id` (UUID, Primary Key)
+    *   `filename` (String)
+    *   `upload_timestamp` (DateTime)
+    *   `status` (Enum: PENDING, PROCESSING, COMPLETED, FAILED)
+    *   `storage_path` (String)
+    *   `job_id` (ForeignKey to Job)
+*   **Job:**
+    *   `job_id` (UUID, Primary Key)
+    *   `user_id` (String/UUID, if applicable)
+    *   `creation_timestamp` (DateTime)
+    *   `completion_timestamp` (DateTime, nullable)
+    *   `status` (Enum: QUEUED, RUNNING, COMPLETED, FAILED)
+    *   `output_format` (Enum: EXCEL, CSV)
+    *   `output_storage_path` (String, nullable)
+*   **ExtractionRule:**
+    *   `rule_id` (UUID, Primary Key)
+    *   `job_id` (ForeignKey to Job) // Or a global rule set
+    *   `field_name` (String)
+    *   `extraction_method` (Enum: LLM_PROMPT, REGEX, KEYWORD, DOCUMENT_AI_MODEL)
+    *   `configuration` (JSON/Text - e.g., prompt template, regex pattern, keyword list, Document AI field name)
+    *   `data_type` (Enum: STRING, INTEGER, FLOAT, DATE, BOOLEAN)
+    *   `is_required` (Boolean)
+*   **ExtractedData:** (Represents a single extracted value for a document)
+    *   `extracted_data_id` (UUID, Primary Key)
+    *   `document_id` (ForeignKey to Document)
+    *   `rule_id` (ForeignKey to ExtractionRule)
+    *   `field_name` (String) // Denormalized for easier querying
+    *   `value` (Text)
+    *   `confidence_score` (Float, nullable)
+    *   `extraction_timestamp` (DateTime)
 
 ### 5.2 Entity Relationships (ERD Description)
 
-*   **Companies and Investors:** These are the primary entities for which embeddings will be generated. They are distinct entities.
-*   **Company <-> Investor (Potential Deal):** A many-to-many relationship can be represented. A company might seek funding from multiple investors, and an investor might invest in multiple companies. This relationship forms the basis of the deal graph.
-*   **pgvector Integration:** Embeddings will be stored as a vector type within the respective Company and Investor tables (or a dedicated embedding table linked to them).
+*   A `Job` can have many `Documents`. (One-to-Many)
+*   A `Job` can have many `ExtractionRules`. (One-to-Many)
+*   A `Document` can have many `ExtractedData` entries. (One-to-Many)
+*   An `ExtractionRule` can be associated with many `ExtractedData` entries across different documents within the same job. (One-to-Many)
+
+*(A formal Entity-Relationship Diagram (ERD) would be included here.)*
 
 ### 5.3 Data Access Patterns
 
-*   **Embedding Generation:** Read textual features from Company/Investor entities.
-*   **Vector Search:** Query the `pgvector` database using a company's embedding to find nearest neighbor investor embeddings.
-*   **Matching & Scoring:** Retrieve additional features for companies and investors from the relational part of the database to augment the similarity scores for the matching model.
-*   **Graph Traversal (Bonus):** Query relationships between entities in the graph database or through join tables if using PostgreSQL for graph representation.
+*   **Ingestion:** Write new `Document` and `Job` records. Update `Document` status.
+*   **Extraction:** Read `Document` details, `ExtractionRule` configurations. Write `ExtractedData` records. Update `Document` and `Job` status.
+*   **Consolidation/Output:** Read `ExtractedData` records, grouped by `Job` or `Document`.
+*   **Rule Management:** CRUD operations on `ExtractionRule` entities.
 
 ### 5.4 Indexing and Optimization Strategies
 
-*   **pgvector Indexing:** Utilize `ivfflat` or `hnsw` indexes within `pgvector` for efficient Approximate Nearest Neighbor (ANN) search on embeddings. The choice depends on the trade-off between search speed and accuracy. `hnsw` generally offers better performance.
-*   **Database Indexing:** Standard B-tree indexes on primary keys and frequently queried columns (e.g., `company_id`, `investor_id`, `industry`).
-*   **Text Preprocessing:** Efficient text cleaning and normalization to ensure consistent input for embedding models.
-*   **Batch Processing:** Generate embeddings and ingest data in batches to optimize resource utilization.
+*   **Indexes:**
+    *   Primary keys on all `*_id` fields.
+    *   Index `job_id` on `Document` and `ExtractionRule` tables for efficient job-related queries.
+    *   Index `document_id` on `ExtractedData` for retrieving all data for a specific document.
+    *   Index `status` fields on `Document` and `Job` for efficient filtering of pending/processing items.
+*   **Optimization:**
+    *   Use efficient data types (e.g., UUIDs, appropriate string lengths).
+    *   Consider denormalizing `field_name` in `ExtractedData` for faster querying during consolidation.
+    *   For very large datasets, consider partitioning tables or using a data warehouse solution if analytical queries become complex.
+    *   Optimize database queries using `EXPLAIN` and appropriate indexing.
 
 ---
 
 ## 6. API DESIGN (if applicable)
 
-For this pilot, a formal API is not strictly required. The core functionality can be executed via Python scripts. However, if a simple interface is desired for demonstration:
+Assuming an API Gateway approach using FastAPI:
 
-### 6.1 RESTful API Endpoints (Example)
+### 6.1 RESTful API Endpoints
 
-*   **POST `/generate_embeddings`:**
-    *   **Description:** Triggers the generation of embeddings for companies and/or investors based on provided data.
-    *   **Request Body:** JSON object specifying data source and entity types (e.g., `{"data_source": "csv", "entities": ["companies", "investors"]}`).
-    *   **Response:** Status message and count of generated embeddings.
-*   **POST `/find_matches`:**
-    *   **Description:** Finds best investor matches for a given company or a list of companies.
-    *   **Request Body:** JSON object specifying company IDs or criteria (e.g., `{"company_ids": ["comp_1", "comp_2"], "num_matches": 5}`).
-    *   **Response:** JSON object containing a list of best matches for each company, including scores (e.g., `{"comp_1": [{"investor_id": "inv_A", "score": 0.95}, ...], ...}`).
+*   **`POST /jobs`**: Create a new extraction job.
+    *   **Request Body:**
+        ```json
+        {
+          "output_format": "EXCEL", // "EXCEL" or "CSV"
+          "rules": [
+            {"field_name": "Invoice Number", "extraction_method": "LLM_PROMPT", "configuration": {"prompt": "Extract the invoice number."}, "data_type": "STRING"},
+            {"field_name": "Total Amount", "extraction_method": "REGEX", "configuration": {"pattern": "\\$\\d+\\.\\d{2}"}, "data_type": "FLOAT"}
+            // ... more rules
+          ]
+        }
+        ```
+    *   **Response:**
+        ```json
+        {
+          "job_id": "uuid-for-the-job",
+          "message": "Job created successfully. Upload documents using POST /jobs/{job_id}/documents"
+        }
+        ```
+
+*   **`POST /jobs/{job_id}/documents`**: Upload one or more documents for a specific job.
+    *   **Request Body:** `multipart/form-data` with files.
+    *   **Response:**
+        ```json
+        {
+          "job_id": "uuid-for-the-job",
+          "uploaded_files": ["file1.pdf", "file2.pdf"],
+          "message": "Documents uploaded. Processing started."
+        }
+        ```
+
+*   **`GET /jobs/{job_id}`**: Get the status of a job.
+    *   **Response:**
+        ```json
+        {
+          "job_id": "uuid-for-the-job",
+          "status": "COMPLETED", // PENDING, PROCESSING, COMPLETED, FAILED
+          "created_at": "...",
+          "completed_at": "...",
+          "output_url": "/download/jobs/{job_id}/output.xlsx" // If COMPLETED
+        }
+        ```
+
+*   **`GET /download/jobs/{job_id}/output.{format}`**: Download the generated output file.
+    *   **Response:** File stream (e.g., `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` for .xlsx).
 
 ### 6.2 Request/Response Formats
 
-*   **JSON:** Standard format for request and response bodies.
+*   **JSON:** For API requests and responses (except file uploads/downloads).
+*   **Multipart/form-data:** For file uploads.
+*   **Binary stream:** For file downloads.
 
 ### 6.3 Authentication and Authorization
 
-*   **API Key:** For sensitive operations like embedding generation (if using paid APIs), an API key mechanism (e.g., passed in headers) would be necessary. For internal scripts, this might be managed via environment variables.
+*   **API Key Authentication:** A simple API key passed in the `Authorization` header (e.g., `Authorization: Bearer YOUR_API_KEY`). This is suitable for initial B2B use cases.
+*   **Role-Based Access Control (RBAC):** If multiple users or tenants are supported, implement RBAC to ensure users can only access their own jobs and data.
 
 ### 6.4 Rate Limiting and Security Measures
 
-*   **OpenAI API Limits:** Adhere to OpenAI's rate limits.
-*   **Input Validation:** Sanitize all incoming data to prevent injection attacks.
+*   **Rate Limiting:** Implement rate limiting on API endpoints (especially uploads and job creation) to prevent abuse and ensure fair usage. Libraries like `slowapi` (for FastAPI) can be used.
+*   **Input Validation:** Use Pydantic models in FastAPI for robust validation of request payloads.
+*   **Secure API Key Management:** Store API keys securely (e.g., environment variables, secrets management system). Avoid hardcoding.
+*   **HTTPS:** Enforce HTTPS for all communication.
 
 ---
 
@@ -316,62 +416,82 @@ For this pilot, a formal API is not strictly required. The core functionality ca
 ### 7.1 Directory Structure
 
 ```
-deal_intelligence_pilot/
-Γö£ΓöÇΓöÇ data/                  # Raw and processed data files
-Γöé   Γö£ΓöÇΓöÇ raw/
-Γöé   ΓööΓöÇΓöÇ processed/
-Γö£ΓöÇΓöÇ notebooks/             # Jupyter notebooks for exploration and experimentation
-Γö£ΓöÇΓöÇ src/                   # Source code
+project_root/
+Γö£ΓöÇΓöÇ app/
 Γöé   Γö£ΓöÇΓöÇ __init__.py
-Γöé   Γö£ΓöÇΓöÇ data_processing/   # Scripts for data ingestion and preprocessing
+Γöé   Γö£ΓöÇΓöÇ main.py             # FastAPI application entry point
+Γöé   Γö£ΓöÇΓöÇ api/                # API endpoints
 Γöé   Γöé   Γö£ΓöÇΓöÇ __init__.py
-Γöé   Γöé   ΓööΓöÇΓöÇ loader.py
-Γöé   Γö£ΓöÇΓöÇ embeddings/        # Scripts for embedding generation
+Γöé   Γöé   Γö£ΓöÇΓöÇ v1/             # API versioning
+Γöé   Γöé   Γöé   Γö£ΓöÇΓöÇ __init__.py
+Γöé   Γöé   Γöé   Γö£ΓöÇΓöÇ endpoints/
+Γöé   Γöé   Γöé   Γöé   Γö£ΓöÇΓöÇ __init__.py
+Γöé   Γöé   Γöé   Γöé   Γö£ΓöÇΓöÇ jobs.py
+Γöé   Γöé   Γöé   Γöé   ΓööΓöÇΓöÇ documents.py
+Γöé   Γöé   Γöé   ΓööΓöÇΓöÇ schemas.py      # Pydantic models for requests/responses
+Γöé   Γö£ΓöÇΓöÇ core/               # Configuration, security, constants
 Γöé   Γöé   Γö£ΓöÇΓöÇ __init__.py
-Γöé   Γöé   ΓööΓöÇΓöÇ generator.py
-Γöé   Γö£ΓöÇΓöÇ database/          # Database interaction logic (pgvector)
+Γöé   Γöé   Γö£ΓöÇΓöÇ config.py
+Γöé   Γöé   ΓööΓöÇΓöÇ security.py
+Γöé   Γö£ΓöÇΓöÇ crud/               # Database interaction logic (if using SQL)
 Γöé   Γöé   Γö£ΓöÇΓöÇ __init__.py
-Γöé   Γöé   ΓööΓöÇΓöÇ vector_db.py
-Γöé   Γö£ΓöÇΓöÇ matching/          # Matching and scoring logic
+Γöé   Γöé   Γö£ΓöÇΓöÇ jobs.py
+Γöé   Γöé   ΓööΓöÇΓöÇ documents.py
+Γöé   Γö£ΓöÇΓöÇ db/                 # Database connection setup
 Γöé   Γöé   Γö£ΓöÇΓöÇ __init__.py
-Γöé   Γöé   Γö£ΓöÇΓöÇ model.py
-Γöé   Γöé   ΓööΓöÇΓöÇ scorer.py
-Γöé   Γö£ΓöÇΓöÇ graph/             # Graph module (Bonus)
+Γöé   Γöé   ΓööΓöÇΓöÇ session.py
+Γöé   Γö£ΓöÇΓöÇ services/           # Business logic and external service integrations
 Γöé   Γöé   Γö£ΓöÇΓöÇ __init__.py
-Γöé   Γöé   ΓööΓöÇΓöÇ graph_builder.py
-Γöé   ΓööΓöÇΓöÇ utils/             # Utility functions
+Γöé   Γöé   Γö£ΓöÇΓöÇ extraction_service.py
+Γöé   Γöé   Γö£ΓöÇΓöÇ ocr_service.py
+Γöé   Γöé   Γö£ΓöÇΓöÇ output_generator.py
+Γöé   Γöé   Γö£ΓöÇΓöÇ rule_engine.py
+Γöé   Γöé   ΓööΓöÇΓöÇ storage_service.py
+Γöé   Γö£ΓöÇΓöÇ workers/            # Asynchronous task workers (e.g., Celery)
+Γöé   Γöé   Γö£ΓöÇΓöÇ __init__.py
+Γöé   Γöé   ΓööΓöÇΓöÇ tasks.py
+Γöé   ΓööΓöÇΓöÇ models/             # SQLAlchemy models (if using ORM)
 Γöé       Γö£ΓöÇΓöÇ __init__.py
-Γöé       ΓööΓöÇΓöÇ helpers.py
-Γö£ΓöÇΓöÇ tests/                 # Unit and integration tests
+Γöé       Γö£ΓöÇΓöÇ job.py
+Γöé       ΓööΓöÇΓöÇ document.py
+Γö£ΓöÇΓöÇ tests/                  # Unit and integration tests
 Γöé   Γö£ΓöÇΓöÇ __init__.py
+Γöé   Γö£ΓöÇΓöÇ api/
+Γöé   Γö£ΓöÇΓöÇ services/
 Γöé   ΓööΓöÇΓöÇ ...
-Γö£ΓöÇΓöÇ config/                # Configuration files (API keys, DB credentials)
-Γö£ΓöÇΓöÇ main.py                # Main script to orchestrate the pipeline
-Γö£ΓöÇΓöÇ requirements.txt       # Project dependencies
-ΓööΓöÇΓöÇ README.md              # Project description and setup instructions
+Γö£ΓöÇΓöÇ scripts/                # Utility scripts (e.g., migrations)
+Γö£ΓöÇΓöÇ .env                    # Environment variables
+Γö£ΓöÇΓöÇ .gitignore
+Γö£ΓöÇΓöÇ Dockerfile
+Γö£ΓöÇΓöÇ docker-compose.yml
+Γö£ΓöÇΓöÇ requirements.txt
+ΓööΓöÇΓöÇ README.md
 ```
 
 ### 7.2 Module Organization
 
-*   Modules are organized by functionality (data processing, embeddings, matching, etc.).
-*   Each module will contain specific classes or functions related to its responsibility.
-*   `main.py` will orchestrate the workflow by importing and calling functions from different modules.
+*   **`api/`**: Exposes the external interface (REST endpoints). Handles request validation and delegates to services.
+*   **`services/`**: Contains the core business logic. Orchestrates calls to external services (AI, OCR, Storage) and data manipulation.
+*   **`db/` & `models/`**: Handles database interactions and defines data structures.
+*   **`workers/`**: For background tasks (e.g., processing documents asynchronously).
+*   **`core/`**: Global configurations, utilities, and security components.
 
 ### 7.3 Naming Conventions
 
-*   **Files:** `snake_case.py`
-*   **Directories:** `snake_case/`
-*   **Variables:** `snake_case`
-*   **Functions:** `snake_case()`
-*   **Classes:** `CamelCase`
-*   **Constants:** `UPPER_SNAKE_CASE`
+*   **Files:** `snake_case.py` (e.g., `extraction_service.py`)
+*   **Directories:** `snake_case`
+*   **Classes:** `CamelCase` (e.g., `ExtractionService`)
+*   **Functions/Methods:** `snake_case` (e.g., `process_document`)
+*   **Variables:** `snake_case` (e.g., `document_path`)
+*   **Constants:** `UPPER_SNAKE_CASE` (e.g., `DEFAULT_OUTPUT_FORMAT`)
 
 ### 7.4 Code Organization Principles
 
-*   **DRY (Don't Repeat Yourself):** Abstract common logic into utility functions.
-*   **Single Responsibility Principle (SRP):** Each module/class should have one primary responsibility.
-*   **Readability:** Write clear, concise code with meaningful variable names and comments where necessary.
-*   **Modularity:** Design components to be loosely coupled.
+*   **Single Responsibility Principle (SRP):** Each module and class should have one primary responsibility.
+*   **Don't Repeat Yourself (DRY):** Avoid code duplication. Use helper functions and shared modules.
+*   **Separation of Concerns:** Clearly distinguish between API handling, business logic, data access, and external service integrations.
+*   **Dependency Injection:** Inject dependencies (e.g., database sessions, service clients) into classes/functions to improve testability and flexibility.
+*   **Configuration Management:** Use environment variables and configuration files (`.env`) for settings.
 
 ---
 
@@ -379,24 +499,29 @@ deal_intelligence_pilot/
 
 ### 8.1 Authentication and Authorization Strategy
 
-*   **OpenAI API Keys:** Store API keys securely using environment variables or a dedicated secrets management tool (e.g., HashiCorp Vault, AWS Secrets Manager ΓÇô though likely overkill for this pilot). Avoid hardcoding keys in the codebase.
-*   **Database Credentials:** Similar to API keys, store database credentials securely.
-*   **Access Control:** For the pilot, access will likely be controlled by who has access to the codebase and environment. For future iterations, role-based access control (RBAC) would be implemented.
+*   **API Key:** Implement API key authentication for the API Gateway. Keys should be securely generated, stored, and managed.
+*   **Tenant Isolation (if applicable):** If the system needs to support multiple clients/tenants, ensure strict isolation of data and resources using tenant IDs in database queries and storage paths.
+*   **Principle of Least Privilege:** Services should only have the permissions necessary to perform their functions.
 
-### 8.2 Data Encryption (at rest and in transit)
+### 8.2 Data Encryption
 
-*   **In Transit:** Use SSL/TLS for all communication with external services (OpenAI API) and the database (PostgreSQL).
-*   **At Rest:** Sensitive data within the database (if any beyond embeddings) should be considered for encryption. PostgreSQL offers encryption capabilities. For this pilot, focus is on securing access credentials.
+*   **In Transit:** All communication between the client and the API Gateway, and between internal services, must use TLS/SSL (HTTPS).
+*   **At Rest:**
+    *   **Uploaded Documents:** If using cloud storage (S3, Blob Storage), enable server-side encryption. Consider client-side encryption if highly sensitive data is involved.
+    *   **Database:** Encrypt sensitive fields in the database if necessary. Ensure database server-level encryption is enabled.
 
 ### 8.3 Input Validation and Sanitization
 
-*   **All User/External Inputs:** Rigorously validate and sanitize all data received from external sources (e.g., CSV files, API requests) to prevent injection attacks (SQL injection, etc.) and ensure data integrity.
+*   **API Inputs:** Use Pydantic models for strict validation of all incoming data (file types, sizes, JSON payloads).
+*   **File Uploads:** Validate file types (`.pdf`) and potentially implement size limits to prevent denial-of-service attacks. Sanitize filenames to prevent path traversal vulnerabilities.
+*   **LLM/AI Inputs:** Be mindful of prompt injection vulnerabilities. Sanitize user-provided configuration parameters that are incorporated into prompts.
 
 ### 8.4 Security Best Practices
 
-*   **Least Privilege:** Grant only necessary permissions to API keys and database users.
-*   **Regular Updates:** Keep all libraries and dependencies updated to patch known vulnerabilities.
-*   **Secure Coding:** Follow OWASP guidelines for secure coding practices.
+*   **Dependency Scanning:** Regularly scan project dependencies for known vulnerabilities.
+*   **Secrets Management:** Use a secure secrets management solution (e.g., HashiCorp Vault, AWS Secrets Manager, Azure Key Vault) for API keys, database credentials, etc.
+*   **Logging:** Log security-relevant events (e.g., failed authentication attempts).
+*   **Regular Audits:** Conduct periodic security reviews and penetration testing.
 
 ---
 
@@ -404,84 +529,104 @@ deal_intelligence_pilot/
 
 ### 9.1 Expected Load and Growth Projections
 
-*   **Pilot Phase:** Small dataset (e.g., 100-1000 companies/investors). Performance requirements are moderate.
-*   **Future Growth:** The platform is expected to handle thousands or millions of companies and investors. Embedding generation and vector search will become critical performance bottlenecks.
+*   **Initial Phase:** Assume moderate load, processing tens to hundreds of documents per day.
+*   **Growth:** Project potential growth to thousands or tens of thousands of documents per day, with potential for large batch processing.
+*   **Concurrency:** The system should handle multiple concurrent upload and processing jobs.
 
 ### 9.2 Scalability Strategies
 
-*   **Embedding Generation:**
-    *   **Batch Processing:** Process data in batches.
-    *   **Distributed Computing (Future):** Utilize frameworks like Spark or Dask for parallel processing if datasets become very large.
-    *   **Optimized Models:** Use efficient Sentence Transformer models.
-*   **Vector Search:**
-    *   **pgvector Indexing:** Leverage `hnsw` or `ivfflat` indexes for efficient ANN search. Tuning index parameters is crucial.
-    *   **Faiss:** If pgvector becomes a bottleneck, Faiss can be used as a standalone solution, potentially hosted on dedicated infrastructure.
-    *   **Sharding/Replication:** For extremely large datasets, consider sharding the vector index across multiple servers.
-*   **Database:** PostgreSQL can be scaled vertically (more powerful hardware) or horizontally (read replicas, sharding).
+*   **Horizontal Scaling:** Design services to be stateless where possible, allowing multiple instances to run behind a load balancer.
+*   **Asynchronous Processing:** Utilize message queues (RabbitMQ, SQS) to decouple document processing from the API layer. This allows the processing workers to scale independently.
+*   **Database Scaling:** Choose a database that can scale (e.g., managed PostgreSQL on AWS RDS/Azure DB). Consider read replicas if read load becomes high.
+*   **Cloud-Native Services:** Leverage managed services (S3, managed Kubernetes/container services) which offer inherent scalability.
 
 ### 9.3 Caching Strategies
 
-*   **Embedding Cache:** Cache generated embeddings to avoid redundant computation if the same text is processed multiple times.
-*   **Query Results Cache:** Cache results of frequent similarity searches if applicable.
+*   **Configuration Caching:** Cache frequently accessed configurations (e.g., extraction rule templates) in memory or a distributed cache (like Redis) to reduce database load.
+*   **API Response Caching:** Cache static API responses if applicable (e.g., status endpoints).
+*   **Intermediate Results:** Cache results of expensive OCR or AI processing steps if the same document content is likely to be processed multiple times (less likely in this specific use case unless re-processing is a feature).
 
 ### 9.4 Performance Optimization Approaches
 
-*   **Profiling:** Use profiling tools (e.g., `cProfile`) to identify performance bottlenecks in the Python code.
-*   **Efficient Data Structures:** Utilize NumPy and Pandas effectively.
-*   **Algorithmic Optimization:** Choose efficient algorithms for similarity search and matching.
-*   **Hardware:** Ensure sufficient CPU, RAM, and potentially GPU resources for embedding generation.
+*   **Efficient OCR/AI Calls:**
+    *   Batching requests to AI/Document AI services where possible.
+    *   Optimizing prompts for LLMs to reduce token usage and processing time.
+    *   Choosing the most cost-effective and performant AI/OCR service for specific document types.
+*   **Parallel Processing:** Utilize multi-threading or multi-processing within Python workers to process multiple documents concurrently on a single machine.
+*   **Asynchronous I/O:** Use asynchronous programming (e.g., `async`/`await` with FastAPI and libraries like `aiohttp`, `aiofiles`) for I/O-bound operations like network requests and file access.
+*   **Profiling:** Regularly profile the application to identify performance bottlenecks.
+*   **Database Optimization:** Ensure efficient queries and proper indexing.
 
 ---
 
 ## 10. IMPLEMENTATION PLAN
 
-### 10.1 Phase 1: Core Foundation and MVP Features (Est. 1-2 Weeks)
+### 10.1 Phase 1: Core Foundation and MVP Features
 
-*   **Objective:** Establish the core pipeline for data ingestion, embedding generation, storage, and basic matching.
-*   **Tasks:**
-    *   Set up Python environment and project structure.
-    *   Implement data loading and basic preprocessing (Pandas).
-    *   Integrate HuggingFace Sentence Transformers for embedding generation.
-    *   Set up PostgreSQL with `pgvector`.
-    *   Implement logic to store embeddings in `pgvector`.
-    *   Implement basic cosine similarity calculation.
-    *   Develop script to output "best-matching investors for each company" based purely on similarity.
-    *   Basic unit tests for core components.
-*   **Deliverables:** A working Python script that takes sample data, generates embeddings, stores them, and outputs a list of investor matches based on embedding similarity.
-*   **Budget Focus:** Maximizing the use of free tiers/resources, efficient coding.
+*   **Objective:** Deliver a functional PDF-to-Excel/CSV extraction module with basic configuration and output.
+*   **Features:**
+    *   Basic API for job creation and document upload.
+    *   Integration with one primary AI extraction service (e.g., OpenAI).
+    *   Integration with Tesseract OCR for scanned documents.
+    *   Support for defining extraction rules via API (e.g., simple key-value extraction using LLM prompts).
+    *   Data consolidation for multiple documents within a job.
+    *   Excel output generation.
+    *   Basic logging and error reporting.
+    *   Dockerization for local development and deployment.
+*   **Deliverables:**
+    *   Working Python application with API endpoints.
+    *   Dockerfile and docker-compose.yml.
+    *   Basic documentation.
+    *   Deployment instructions.
+*   **Estimated Timeline:** 4-6 weeks
 
-### 10.2 Phase 2: Enhanced Matching & Graph (Est. 1 Week)
+### 10.2 Phase 2: Extended Features & Robustness
 
-*   **Objective:** Improve matching accuracy and introduce the deal graph concept.
-*   **Tasks:**
-    *   Integrate OpenAI for embedding generation (if Sentence Transformers prove insufficient or for comparison).
-    *   Implement a simple Logistic Regression model using similarity scores and potentially other features for matching.
-    *   Implement XGBoost model for comparison/enhancement.
-    *   Develop the Deal Graph Module (using NetworkX or similar for in-memory graph, or basic PostgreSQL tables).
-    *   Implement simple centrality score calculation (Bonus).
-    *   Refine the output to include fit scores.
-*   **Deliverables:** Enhanced matching logic, initial deal graph representation, and improved output format.
+*   **Objective:** Enhance extraction capabilities, improve user experience, and add robustness.
+*   **Features:**
+    *   Support for multiple AI/Document AI service integrations (Strategy pattern).
+    *   Advanced rule configuration (regex, keyword matching, schema-guided parsing).
+    *   Improved error handling and retry mechanisms.
+    *   Status tracking for jobs and documents.
+    *   CSV output option.
+    *   Basic UI for job management and monitoring (optional, depending on client needs).
+    *   Integration with cloud storage (S3/Blob).
+*   **Deliverables:**
+    *   Enhanced API and/or basic UI.
+    *   Integration with secondary AI/Document AI services.
+    *   Cloud storage integration.
+    *   Updated documentation.
+*   **Estimated Timeline:** 4-6 weeks
 
-### 10.3 Phase 3: Optimization and Polish (Est. 0.5 - 1 Week)
+### 10.3 Phase 3: Optimization and Polish
 
-*   **Objective:** Refine performance, add basic error handling, and prepare for demonstration.
-*   **Tasks:**
-    *   Optimize embedding generation and vector search performance.
-    *   Add basic logging and error handling.
-    *   Refactor code for clarity and maintainability.
-    *   Prepare a demonstration script and sample output.
-    *   Document the code and usage.
-*   **Deliverables:** Optimized and polished prototype ready for stakeholder review.
+*   **Objective:** Improve performance, scalability, and user experience.
+*   **Features:**
+    *   Performance optimizations (caching, parallel processing tuning).
+    *   Scalability improvements (e.g., setting up message queues, worker scaling).
+    *   Enhanced logging and monitoring dashboards.
+    *   Security hardening.
+    *   Comprehensive test suite.
+    *   Maintainability notes and handover documentation.
+*   **Deliverables:**
+    *   Performance benchmarks.
+    *   Production-ready deployment scripts.
+    *   Final documentation package.
+    *   Handover call.
+*   **Estimated Timeline:** 2-4 weeks
 
 ### 10.4 Timeline Estimates
 
-*   **Total Estimated Time:** 2.5 - 4 weeks. This is an aggressive estimate and depends heavily on data quality and developer efficiency.
+*   **Total Initial Delivery (Phases 1 & 2):** 8-12 weeks
+*   **Phase 3:** 2-4 weeks post-Phase 2 completion.
+
+*(Note: These are estimates and depend heavily on resource availability and complexity discovered during development.)*
 
 ### 10.5 Key Milestones and Deliverables
 
-*   **Milestone 1 (End of Phase 1):** Functional MVP pipeline for embedding generation and basic similarity matching.
-*   **Milestone 2 (End of Phase 2):** Enhanced matching model and initial deal graph implementation.
-*   **Milestone 3 (End of Phase 3):** Optimized and documented prototype ready for demonstration.
+*   **Milestone 1:** Core extraction engine functional (end of Phase 1).
+*   **Milestone 2:** MVP API/UI complete and integrated with cloud storage (end of Phase 2).
+*   **Milestone 3:** Production-ready, optimized application with documentation (end of Phase 3).
 
 ---
 
@@ -489,26 +634,38 @@ deal_intelligence_pilot/
 
 ### 11.1 Unit Testing Approach
 
-*   **Framework:** `pytest`.
-*   **Scope:** Test individual functions and classes within modules (e.g., text cleaning functions, embedding generation wrappers, database connection logic, scoring functions).
-*   **Mocking:** Mock external API calls (OpenAI) and database interactions where appropriate to isolate unit tests.
+*   **Framework:** `pytest`
+*   **Scope:** Test individual functions, classes, and modules in isolation. Mock external dependencies (API clients, database connections, file system operations).
+*   **Focus:** Business logic, data transformations, rule application logic, utility functions.
+*   **Coverage Goal:** Aim for >80% code coverage.
 
 ### 11.2 Integration Testing
 
-*   **Scope:** Test the interaction between key components:
-    *   Data loading -> Embedding generation -> Database storage.
-    *   Embedding retrieval -> Similarity search -> Matching engine.
-*   **Approach:** Use a small, representative dataset and a local PostgreSQL instance.
+*   **Scope:** Test the interaction between different components.
+    *   API endpoints interacting with services.
+    *   Services interacting with the database.
+    *   Services interacting with external APIs (using mock servers or dedicated test accounts).
+*   **Focus:** Data flow, inter-service communication, end-to-end logic for specific workflows (e.g., upload -> process -> output).
+*   **Tools:** `pytest` with fixtures for setting up test environments (e.g., in-memory SQLite, mock message queues).
 
 ### 11.3 End-to-End Testing
 
-*   **Scope:** Test the entire pipeline from raw data input to final output generation.
-*   **Approach:** Run the `main.py` script with sample data and verify the final output format and content.
+*   **Scope:** Simulate real user scenarios from start to finish.
+    *   Upload a PDF via the API/UI.
+    *   Verify the job status updates.
+    *   Download the generated output file.
+    *   Validate the content of the output file against expected results.
+*   **Focus:** Overall system functionality and user experience.
+*   **Tools:** Automated scripts using tools like `requests` (for API) and potentially browser automation tools (like Selenium/Playwright if a UI is developed).
 
 ### 11.4 Performance Testing
 
-*   **Scope:** Measure the time taken for critical operations (embedding generation, vector search) with increasing data sizes (simulated).
-*   **Approach:** Use Python's `time` module or profiling tools. Test with datasets representative of expected pilot scale.
+*   **Scope:** Measure system performance under load.
+    *   API response times.
+    *   Document processing throughput.
+    *   Resource utilization (CPU, memory).
+*   **Tools:** Load testing tools like `locust`, `k6`, or ApacheBench (`ab`).
+*   **Scenarios:** Simulate concurrent users, large file uploads, and high volumes of documents.
 
 ---
 
@@ -516,28 +673,40 @@ deal_intelligence_pilot/
 
 ### 12.1 Deployment Pipeline
 
-*   **Pilot Phase:** Manual deployment via running Python scripts.
-*   **Future:** Automated deployment using CI/CD pipelines (e.g., GitHub Actions) to deploy to cloud environments (AWS, GCP, Azure).
+*   **CI (Continuous Integration):**
+    *   On code commit to main branches: Run linters, formatters, unit tests.
+    *   Build Docker image.
+    *   Push image to a container registry (e.g., Docker Hub, AWS ECR, Azure CR).
+*   **CD (Continuous Deployment):**
+    *   On merge to release branch/tagging: Deploy to staging environment.
+    *   Run integration and E2E tests on staging.
+    *   Manual approval gate.
+    *   Deploy to production environment.
+*   **Tools:** GitHub Actions, GitLab CI, Jenkins.
 
 ### 12.2 Monitoring and Logging
 
-*   **Logging:** Implement comprehensive logging throughout the application using Python's `logging` module to track execution flow, errors, and key metrics.
+*   **Logging:**
+    *   Centralized logging using Python's `logging` module.
+    *   Ship logs to a central aggregation system (e.g., ELK Stack - Elasticsearch, Logstash, Kibana; or cloud equivalents like AWS CloudWatch Logs, Azure Monitor Logs).
+    *   Structure logs (e.g., JSON format) for easier querying and analysis.
 *   **Monitoring:**
-    *   **Resource Usage:** Monitor CPU, memory, and disk usage of the PostgreSQL instance and any compute resources.
-    *   **API Performance:** Track response times and error rates for API endpoints (if implemented).
-    *   **OpenAI Usage:** Monitor API usage and costs.
+    *   **Metrics:** Track key performance indicators (KPIs) like request latency, error rates, throughput, resource utilization (CPU, memory, disk I/O).
+    *   **Tools:** Prometheus + Grafana, Datadog, AWS CloudWatch, Azure Monitor.
+    *   **Alerting:** Set up alerts for critical issues (e.g., high error rates, service unavailability, resource exhaustion).
 
 ### 12.3 Backup and Disaster Recovery
 
-*   **Database Backups:** Configure regular automated backups for the PostgreSQL database.
-*   **Code Backups:** Ensure all code is committed to version control (Git).
-*   **Disaster Recovery Plan:** For the pilot, this is minimal. For production, a plan would involve restoring from backups and potentially replicating infrastructure.
+*   **Database Backups:** Configure automated, regular backups of the database. Test restore procedures periodically.
+*   **File Storage Backups:** Leverage the built-in backup and versioning features of cloud object storage (S3/Blob).
+*   **Disaster Recovery Plan:** Define RTO (Recovery Time Objective) and RPO (Recovery Point Objective). Consider multi-region deployments for critical components if high availability is paramount.
 
 ### 12.4 Maintenance Considerations
 
-*   **Dependency Updates:** Regularly update Python libraries and PostgreSQL extensions to patch security vulnerabilities and benefit from new features.
-*   **Model Retraining:** Embeddings and matching models may need periodic retraining as new data becomes available or performance degrades.
-*   **Cost Management:** Monitor OpenAI API costs and optimize usage.
+*   **Regular Updates:** Keep dependencies (Python, libraries, OS) up-to-date to patch security vulnerabilities and benefit from performance improvements.
+*   **Code Refactoring:** Periodically refactor code to improve maintainability and address technical debt.
+*   **Documentation:** Maintain up-to-date documentation for code, APIs, and deployment procedures.
+*   **Monitoring Review:** Regularly review monitoring dashboards and alerts to proactively identify and address issues.
 
 ---
 
@@ -545,31 +714,48 @@ deal_intelligence_pilot/
 
 ### 13.1 Technical Risks
 
-*   **Risk:** Poor quality of input data leads to inaccurate embeddings and matching.
-    *   **Mitigation:** Implement robust data cleaning and validation steps. Clearly communicate data requirements to stakeholders. Explore data augmentation techniques if necessary.
-*   **Risk:** OpenAI API costs exceed budget.
-    *   **Mitigation:** Monitor usage closely. Optimize embedding generation by processing data in batches and potentially using Sentence Transformers as a primary or fallback option. Explore OpenAI's pricing tiers.
-*   **Risk:** Performance bottlenecks in embedding generation or vector search for larger datasets.
-    *   **Mitigation:** Optimize `pgvector` indexing. Profile Python code. Consider Faiss as an alternative if `pgvector` proves insufficient. Plan for future scaling strategies.
-*   **Risk:** Difficulty integrating `pgvector` or managing PostgreSQL.
-    *   **Mitigation:** Start with a simple local PostgreSQL setup. Utilize Docker for consistent environments. Leverage community support and documentation.
+*   **Risk 1: AI Extraction Accuracy:** LLMs and Document AI services may not achieve the desired accuracy for all document types or layouts, especially for highly unstructured or noisy data.
+    *   **Mitigation:**
+        *   Thorough testing with diverse document samples.
+        *   Implement configurable extraction rules (regex, keywords) as fallbacks or supplements to AI.
+        *   Allow users to provide feedback on extraction quality to refine prompts/models.
+        *   Consider fine-tuning models if feasible and cost-effective.
+        *   Clearly communicate accuracy limitations to users.
+*   **Risk 2: Vendor Lock-in / API Changes:** Reliance on specific third-party AI/Document AI providers.
+    *   **Mitigation:**
+        *   Design the AI Extraction Service using the Strategy pattern to allow easy switching between providers.
+        *   Monitor vendor API change logs and plan for updates.
+        *   Consider using open-source LLMs or self-hosted models for critical components if feasible.
+*   **Risk 3: Handling Messy PDFs:** PDFs with complex formatting, tables, or low-quality scans can be challenging for both OCR and AI extraction.
+    *   **Mitigation:**
+        *   Prioritize robust OCR preprocessing.
+        *   Leverage advanced features of Document AI services designed for layout analysis.
+        *   Implement sophisticated prompt engineering for LLMs to better interpret context.
+        *   Provide options for manual review/correction if automated extraction fails.
+*   **Risk 4: Scalability Bottlenecks:** Unexpected load patterns overwhelming specific components (e.g., database, message queue).
+    *   **Mitigation:**
+        *   Implement robust monitoring and alerting.
+        *   Design for horizontal scaling from the outset.
+        *   Conduct performance and load testing early and often.
+        *   Optimize database queries and indexing.
 
 ### 13.2 Project Risks
 
-*   **Risk:** Scope creep beyond the pilot's defined features.
-    *   **Mitigation:** Maintain strict adherence to the MVP scope. Document any requested changes and assess their impact on timeline and budget, deferring them to future phases.
-*   **Risk:** Unrealistic expectations from stakeholders regarding AI capabilities.
-    *   **Mitigation:** Clearly communicate the limitations of the pilot and the nature of AI models. Focus on demonstrating tangible progress and value.
-*   **Risk:** Delays in data provision or feedback.
-    *   **Mitigation:** Establish clear communication channels and timelines with stakeholders. Proactively follow up on data and feedback.
-
-### 13.3 Mitigation Strategies Summary
-
-*   **Agile Development:** Employ iterative development cycles with frequent check-ins.
-*   **Proactive Communication:** Maintain open and transparent communication with stakeholders.
-*   **Focus on MVP:** Prioritize core features for the pilot.
-*   **Contingency Planning:** Allocate buffer time for unforeseen issues.
-*   **Leverage Open Source:** Maximize the use of free and open-source tools where appropriate to manage costs.
+*   **Risk 1: Scope Creep:** Additional feature requests extending beyond the initial MVP.
+    *   **Mitigation:**
+        *   Strict adherence to the phased implementation plan.
+        *   Formal change request process for any scope modifications.
+        *   Clear communication with stakeholders about the impact of changes on timeline and budget.
+*   **Risk 2: Underestimation of Effort:** Complexity of document parsing or integration underestimated.
+    *   **Mitigation:**
+        *   Build in buffer time for complex tasks.
+        *   Conduct thorough technical spikes for high-risk areas early in the project.
+        *   Maintain open communication about progress and potential delays.
+*   **Risk 3: Resource Availability:** Key personnel becoming unavailable.
+    *   **Mitigation:**
+        *   Ensure knowledge sharing and documentation within the team.
+        *   Cross-train team members where possible.
+        *   Have contingency plans for critical roles.
 
 ---
 

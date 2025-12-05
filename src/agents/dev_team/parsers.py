@@ -248,13 +248,14 @@ def extract_data_model(tdd_content: str) -> Dict[str, Dict[str, str]]:
 
     return data_model
 
-def extract_features_to_implement(tdd_content: str, phase: Optional[int] = 1) -> List[Dict[str, str]]:
+def extract_features_to_implement(tdd_content: str, phase: Optional[int] = 1, project_type: Optional[str] = None) -> List[Dict[str, str]]:
     """
     Extract specific features to implement from TDD implementation plan.
 
     Args:
         tdd_content: Full TDD markdown
         phase: Which implementation phase to extract (1, 2, or 3). If None, extracts all.
+        project_type: Project type (web_app, script, notebook, etc.) to guide extraction
 
     Returns:
         List of dicts with keys: feature_name, description, priority, phase
@@ -273,9 +274,25 @@ def extract_features_to_implement(tdd_content: str, phase: Optional[int] = 1) ->
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     phase_filter = f"Focus on Phase {phase} features only." if phase else "Extract features from all phases."
+    
+    # Add project type context to avoid wrong defaults
+    project_type_guidance = ""
+    if project_type == 'script':
+        project_type_guidance = "\n\nIMPORTANT: This is a Python script/automation project. Extract features related to scripts, data processing, automation tasks. Do NOT extract web app features like authentication, registration, or UI components."
+    elif project_type == 'notebook':
+        project_type_guidance = "\n\nIMPORTANT: This is a data analysis notebook project. Extract features related to data analysis, CSV processing, metrics computation, visualizations. Do NOT extract web app features like authentication or API endpoints."
+    elif project_type == 'library':
+        project_type_guidance = "\n\nIMPORTANT: This is a Python library/package project. Extract features related to reusable modules, functions, classes. Do NOT extract web app features."
+    elif project_type == 'api':
+        project_type_guidance = "\n\nIMPORTANT: This is an API/backend-only project. Extract features related to API endpoints, backend logic, database. Do NOT extract frontend UI features."
 
     prompt = f"""Extract implementable features from this implementation plan.
     {phase_filter}
+    {project_type_guidance}
+
+    Extract ONLY features that are actually mentioned in the implementation plan.
+    Do NOT add generic features like "User Authentication" unless explicitly mentioned.
+    Focus on the specific requirements and features described.
 
     For each feature, provide:
     FEATURE: Feature name
@@ -285,14 +302,14 @@ def extract_features_to_implement(tdd_content: str, phase: Optional[int] = 1) ->
 
     Format each feature like:
     ---
-    FEATURE: User Authentication
-    DESCRIPTION: Implement JWT-based user authentication with login and registration
+    FEATURE: Promo Code Assignment Script
+    DESCRIPTION: Build Python script to fetch JSON endpoints, apply eligibility rules, assign promo codes
     PRIORITY: high
     PHASE: 1
     ---
 
     Implementation Plan:
-    {impl_section}
+    {impl_section[:10000]}  # Limit to first 10KB to avoid token limits
 
     Output only the formatted features."""
 
@@ -376,23 +393,24 @@ def extract_project_metadata(tdd_content: str) -> Dict[str, str]:
 
     return metadata
 
-def parse_tdd_to_state(tdd_content: str, phase: Optional[int] = 1) -> Dict[str, Any]:
+def parse_tdd_to_state(tdd_content: str, phase: Optional[int] = 1, project_type: Optional[str] = None) -> Dict[str, Any]:
     """
     Parse a complete TDD document into a state dictionary for the dev_team agent.
 
     Args:
         tdd_content: Full TDD markdown content
         phase: Which implementation phase to focus on (1, 2, or 3)
+        project_type: Project type to guide feature extraction
 
     Returns:
         Dictionary with parsed TDD information ready for dev_team state
     """
     print("Parsing TDD document...")
 
-    # Extract all components
+    # Extract all components (pass project_type to feature extraction)
     metadata = extract_project_metadata(tdd_content)
     tech_stack = extract_technology_stack(tdd_content)
-    features = extract_features_to_implement(tdd_content, phase)
+    features = extract_features_to_implement(tdd_content, phase, project_type)
     api_endpoints = extract_api_endpoints(tdd_content)
     data_model = extract_data_model(tdd_content)
     security_reqs = extract_security_requirements(tdd_content)

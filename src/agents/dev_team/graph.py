@@ -9,7 +9,7 @@ This is NOT "just wrapping an LLM" - each agent learns from different codebases.
 """
 
 import os
-from typing import List
+from typing import List, Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
@@ -106,11 +106,13 @@ def query_expert_brain(query: str, collection_name: str, k: int = 5) -> str:
 def tech_lead_dispatcher(state: DevTeamState) -> DevTeamState:
     """
     Tech Lead analyzes the feature request and decomposes it into:
-    - Frontend tasks (UI, components, client-side logic)
-    - Backend tasks (API endpoints, database, business logic)
+    - Frontend tasks (UI, components, client-side logic) - for web apps
+    - Backend tasks (API endpoints, database, business logic) - for web apps
+    - Script tasks - for script/notebook projects
     - Architecture notes (how components integrate)
 
     Uses Pydantic structured output to ensure reliable parsing.
+    Adapts based on project type.
     """
     print("\n" + "=" * 70)
     print("TECH LEAD: Analyzing Feature Request")
@@ -123,8 +125,51 @@ def tech_lead_dispatcher(state: DevTeamState) -> DevTeamState:
     if 'needs_revision' not in state:
         state['needs_revision'] = False
 
-    # Build prompt for decomposition
-    system_prompt = """You are a Tech Lead responsible for decomposing feature requests into frontend and backend tasks.
+    # Get project type
+    project_type = state.get('project_type', 'web_app')
+    
+    # Adjust prompt based on project type
+    if project_type in ['script', 'notebook']:
+        # For scripts/notebooks, don't split into frontend/backend
+        system_prompt = """You are a Tech Lead responsible for decomposing feature requests into implementation tasks.
+        This is a Python script/notebook project, NOT a web application.
+        
+        Your job is to analyze the feature and:
+        1. Identify Python script tasks (data fetching, processing, file I/O, analysis)
+        2. Identify notebook tasks (if applicable: data analysis, visualization, metrics)
+        3. Identify configuration/setup tasks (requirements.txt, environment setup)
+        4. Describe the workflow and data flow
+
+        Do NOT create frontend/backend tasks. This is a standalone script/notebook project.
+        Focus on Python scripts, data processing, and analysis tasks.
+
+        Return your analysis as structured JSON with:
+        - frontend_tasks: [] (empty array for script projects)
+        - backend_tasks: array of Python script/analysis tasks
+        - architecture_notes: string describing the script workflow and data flow"""
+
+        user_prompt = f"""Feature Request: {state['feature_request']}
+        This is a {project_type} project. Decompose into Python script/analysis tasks.
+        Do NOT split into frontend/backend - this is NOT a web application."""
+    elif project_type == 'api':
+        # API-only projects
+        system_prompt = """You are a Tech Lead responsible for decomposing feature requests into backend tasks.
+        This is an API/backend-only project, NO frontend.
+        
+        Your job is to analyze the feature and:
+        1. Identify backend tasks only (API endpoints, database, business logic)
+        2. Describe API structure and endpoints
+
+        Return your analysis as structured JSON with:
+        - frontend_tasks: [] (empty array - no frontend)
+        - backend_tasks: array of API/backend work items
+        - architecture_notes: string describing API structure"""
+        
+        user_prompt = f"""Feature Request: {state['feature_request']}
+        This is an API-only project. Decompose into backend/API tasks only. No frontend tasks."""
+    else:
+        # Default: web app
+        system_prompt = """You are a Tech Lead responsible for decomposing feature requests into frontend and backend tasks.
         Your job is to analyze the feature and:
         1. Identify what needs to be built on the frontend (UI, components, client logic)
         2. Identify what needs to be built on the backend (APIs, database, business logic)
@@ -137,7 +182,7 @@ def tech_lead_dispatcher(state: DevTeamState) -> DevTeamState:
         - backend_tasks: array of backend work items
         - architecture_notes: string describing integration"""
 
-    user_prompt = f"""Feature Request: {state['feature_request']}
+        user_prompt = f"""Feature Request: {state['feature_request']}
         Decompose this feature into frontend tasks, backend tasks, and architecture notes."""
 
     # Use structured output with Pydantic model
@@ -465,23 +510,75 @@ def parse_tdd_node(state: DevTeamState) -> DevTeamState:
 
     from src.agents.dev_team.parsers import parse_tdd_to_state
 
-    # Parse TDD into structured data
+    # Get project type for parsing
+    project_type = state.get('project_type', 'web_app')
+    
+    # Parse TDD into structured data (pass project_type for better feature extraction)
     parsed_data = parse_tdd_to_state(
         state['tdd_content'],
-        phase=state.get('implementation_phase', 1)
+        phase=state.get('implementation_phase', 1),
+        project_type=project_type
     )
 
     # Update state with parsed data
     for key, value in parsed_data.items():
         state[key] = value
 
+    # Detect project type from TDD or architect state
+    # Check TDD content for project type indicators
+    tdd_lower = state['tdd_content'].lower()
+    if 'python automation script' in tdd_lower or 'standalone script' in tdd_lower:
+        state['project_type'] = 'script'
+    elif 'jupyter notebook' in tdd_lower or 'data analysis notebook' in tdd_lower:
+        state['project_type'] = 'notebook'
+    elif 'library' in tdd_lower or 'package' in tdd_lower:
+        state['project_type'] = 'library'
+    elif 'api' in tdd_lower and 'frontend' not in tdd_lower:
+        state['project_type'] = 'api'
+    else:
+        state['project_type'] = 'web_app'  # Default
+    
+    print(f"Detected project type: {state.get('project_type', 'web_app')}")
+
     # Create a feature_request from TDD features for backward compatibility
+    # But validate that features match project type
     if state.get('features_to_implement'):
         features = state['features_to_implement']
         feature_names = [f['feature_name'] for f in features if f.get('feature_name')]
-        state['feature_request'] = f"Implement: {', '.join(feature_names[:3])}"
+        
+        # Validate features match project type (catch wrong extraction)
+        project_type = state.get('project_type', 'web_app')
+        auth_keywords = ['registration', 'login', 'authentication', 'jwt', 'user auth']
+        web_app_keywords = ['frontend', 'ui', 'component', 'react', 'vue']
+        
+        # Check if extracted features are wrong for this project type
+        features_text = ' '.join(feature_names).lower()
+        has_auth_features = any(kw in features_text for kw in auth_keywords)
+        has_web_app_features = any(kw in features_text for kw in web_app_keywords)
+        
+        # If script/notebook but extracted auth/web app features, use fallback
+        if project_type in ['script', 'notebook'] and (has_auth_features or has_web_app_features):
+            print(f"⚠️  Warning: Extracted features ({', '.join(feature_names[:3])}) don't match project type ({project_type})")
+            print("   Using fallback: features from project metadata or TDD description")
+            
+            # Try to get features from project metadata or use generic description
+            if state.get('project_metadata') and state['project_metadata'].get('description'):
+                # Extract from description or use the parsed job description
+                desc = state['project_metadata'].get('description', '')
+                if 'promo code' in desc.lower() or 'automation' in desc.lower():
+                    state['feature_request'] = "Implement: Promo code assignment script, JSON endpoint fetching, Campaign impact analysis"
+                else:
+                    state['feature_request'] = desc[:200]  # Use description as fallback
+            else:
+                # Last resort: generic script description
+                state['feature_request'] = f"Implement: {project_type.replace('_', ' ').title()} automation and data processing tasks"
+        else:
+            # Features look correct, use them
+            state['feature_request'] = f"Implement: {', '.join(feature_names[:3])}"
 
         print(f"\nExtracted {len(features)} features from TDD")
+        if feature_names:
+            print(f"Features: {', '.join(feature_names[:3])}")
         print(f"Implementation Phase: {state.get('implementation_phase', 1)}")
         print(f"Tech Stack: {state.get('tech_stack', {})}")
 
@@ -523,17 +620,37 @@ def extract_code_node(state: DevTeamState) -> DevTeamState:
     if state.get('backend_code') and state['backend_code'].strip():
         print("\nExtracting backend files...")
         try:
+            # Debug: Show first 500 chars of backend code to diagnose extraction issues
+            backend_code_preview = state['backend_code'][:500]
+            if len(state['backend_code']) > 500:
+                backend_code_preview += "..."
+            print(f"   Backend code preview: {backend_code_preview}")
+            
             backend_files = extract_and_organize_code(
                 state['backend_code'],
                 language='python',
                 base_path='backend/src'
             )
             state['backend_files'] = backend_files
-            print(f"✓ Extracted {len(backend_files)} backend files")
+            if len(backend_files) == 0:
+                print(f"⚠️  Warning: No backend files extracted from {len(state['backend_code'])} characters")
+                print("   This usually means code blocks lack file paths or proper formatting")
+                # Try extracting without language filter as fallback
+                from src.agents.dev_team.code_generator import extract_code_blocks
+                code_blocks = extract_code_blocks(state['backend_code'])
+                print(f"   Found {len(code_blocks)} total code blocks")
+                for i, (lang, path, code) in enumerate(code_blocks[:3], 1):
+                    print(f"   Block {i}: lang={lang}, path={path or '(none)'}, code_len={len(code)}")
+            else:
+                print(f"✓ Extracted {len(backend_files)} backend files")
         except Exception as e:
             print(f"Error extracting backend files: {e}")
+            import traceback
+            traceback.print_exc()
             state['backend_files'] = {}
     else:
+        if not state.get('backend_code'):
+            print("\nNo backend_code in state - backend developer may not have generated code")
         state['backend_files'] = {}
 
     total_files = len(state.get('frontend_files', {})) + len(state.get('backend_files', {}))
@@ -555,6 +672,14 @@ def generate_scaffolding_node(state: DevTeamState) -> DevTeamState:
 
     config_files = {}
     tech_stack = state.get('tech_stack', {'frontend': [], 'backend': [], 'database': []})
+    
+    # If tech_stack is empty, try to infer from generated files
+    if not any(tech_stack.values()):
+        print("\n Tech stack empty, inferring from generated files...")
+        tech_stack = infer_tech_stack_from_files(state)
+        if any(tech_stack.values()):
+            print(f"✓ Inferred tech stack: {tech_stack}")
+            state['tech_stack'] = tech_stack
 
     # Generate .gitignore
     print("\nGenerating .gitignore...")
@@ -566,20 +691,46 @@ def generate_scaffolding_node(state: DevTeamState) -> DevTeamState:
     features = state.get('features_to_implement', [])
     config_files['README.md'] = generate_readme(project_name, tech_stack, features)
 
+    # Check if we have frontend files
+    frontend_files = state.get('frontend_files', {})
+    has_frontend = bool(frontend_files)
+    
+    # Check if we have backend files
+    backend_files = state.get('backend_files', {})
+    has_backend = bool(backend_files)
+    
     # Generate package.json (if Node.js/React frontend)
-    if any('react' in str(t).lower() or 'node' in str(t).lower() or 'next' in str(t).lower()
-           for tech_list in tech_stack.values() for t in tech_list):
+    has_frontend_tech = any('react' in str(t).lower() or 'node' in str(t).lower() or 'next' in str(t).lower()
+           for tech_list in tech_stack.values() for t in tech_list)
+    
+    # Check file extensions for frontend
+    has_frontend_files = any(
+        f.endswith(('.tsx', '.jsx', '.ts', '.js')) or 'frontend' in f.lower()
+        for f in frontend_files.keys()
+    )
+    
+    if has_frontend_tech or has_frontend_files:
         print("Generating frontend/package.json...")
         config_files['frontend/package.json'] = generate_package_json(state, tech_stack)
 
     # Generate requirements.txt (if Python backend)
-    if any('python' in str(t).lower() or 'fastapi' in str(t).lower() or 'django' in str(t).lower()
-           for tech_list in tech_stack.values() for t in tech_list):
+    has_backend_tech = any('python' in str(t).lower() or 'fastapi' in str(t).lower() or 'django' in str(t).lower()
+           for tech_list in tech_stack.values() for t in tech_list)
+    
+    # Check file extensions for backend
+    has_backend_files = any(
+        f.endswith('.py') or 'backend' in f.lower()
+        for f in backend_files.keys()
+    )
+    
+    if has_backend_tech or has_backend_files:
         print("Generating backend/requirements.txt...")
         config_files['backend/requirements.txt'] = generate_requirements_txt(state, tech_stack)
 
-    # Generate docker-compose.yml (if Docker in stack)
-    if any('docker' in str(t).lower() for tech_list in tech_stack.values() for t in tech_list):
+    # Generate docker-compose.yml (if we have frontend or backend)
+    has_docker_tech = any('docker' in str(t).lower() for tech_list in tech_stack.values() for t in tech_list)
+    
+    if has_docker_tech or (has_frontend and has_backend):
         print("Generating docker-compose.yml...")
         config_files['docker-compose.yml'] = generate_docker_compose(state, tech_stack)
 
@@ -587,6 +738,44 @@ def generate_scaffolding_node(state: DevTeamState) -> DevTeamState:
     print(f"\n✓ Generated {len(config_files)} configuration files")
 
     return state
+
+def infer_tech_stack_from_files(state: DevTeamState) -> Dict[str, List[str]]:
+    """Infer technology stack from generated file extensions and content."""
+    tech_stack = {'frontend': [], 'backend': [], 'database': [], 'devops': [], 'third_party': []}
+    
+    frontend_files = state.get('frontend_files', {})
+    backend_files = state.get('backend_files', {})
+    
+    # Analyze frontend files
+    for filepath in frontend_files.keys():
+        if filepath.endswith('.tsx') or filepath.endswith('.jsx'):
+            if 'react' not in tech_stack['frontend']:
+                tech_stack['frontend'].append('React')
+            if 'typescript' not in tech_stack['frontend'] and filepath.endswith('.tsx'):
+                tech_stack['frontend'].append('TypeScript')
+        elif filepath.endswith('.ts') or filepath.endswith('.js'):
+            if 'TypeScript' not in tech_stack['frontend'] and filepath.endswith('.ts'):
+                tech_stack['frontend'].append('TypeScript')
+            if 'Node.js' not in tech_stack['frontend'] and filepath.endswith('.js'):
+                tech_stack['frontend'].append('Node.js')
+    
+    # Analyze backend files
+    for filepath in backend_files.keys():
+        if filepath.endswith('.py'):
+            if 'Python' not in tech_stack['backend']:
+                tech_stack['backend'].append('Python')
+            # Check for FastAPI
+            content = backend_files.get(filepath, '').lower()
+            if 'fastapi' in content and 'FastAPI' not in tech_stack['backend']:
+                tech_stack['backend'].append('FastAPI')
+            elif 'django' in content and 'Django' not in tech_stack['backend']:
+                tech_stack['backend'].append('Django')
+    
+    # If we have both frontend and backend, suggest Docker
+    if (tech_stack['frontend'] or frontend_files) and (tech_stack['backend'] or backend_files):
+        tech_stack['devops'].append('Docker')
+    
+    return tech_stack
 
 def write_files_node(state: DevTeamState) -> DevTeamState:
     """

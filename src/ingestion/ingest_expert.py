@@ -25,8 +25,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
-from core.config import CHROMA_DB_DIR, EMBEDDING_MODEL
-
+EMBEDDING_MODEL="sentence-transformers/all-MiniLM-L6-v2"
+CHROMA_DB_DIR = "src/data/chroma_db"
 
 # Expert Templates: Curated repos for each domain
 EXPERT_TEMPLATES = {

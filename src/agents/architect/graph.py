@@ -9,13 +9,13 @@ This module implements an interactive architectural design session that:
 """
 
 import os
-from typing import Literal
+from typing import Literal, Optional, List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langgraph.graph import StateGraph, END
 
-from src.agents.architect.state import ArchitectState
+from src.agents.architect.state import ArchitectState, ProjectType
 from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR
 from dotenv import load_dotenv
 from src.tools.memory import get_relevant_preferences
@@ -23,6 +23,52 @@ from src.tools.memory import get_relevant_preferences
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+
+def detect_project_type(goal: str, required_features: Optional[List[str]] = None) -> ProjectType:
+    """
+    Detect project type from job description and features.
+    
+    Returns: 'web_app', 'script', 'notebook', 'library', 'api', or 'unknown'
+    """
+    goal_lower = goal.lower()
+    features_text = " ".join(required_features).lower() if required_features else ""
+    combined = f"{goal_lower} {features_text}"
+    
+    # Keywords for each project type
+    script_keywords = ['script', 'automation', 'fetch', 'process', 'analyze data', 'csv', 
+                      'json endpoint', 'webhook', 'single-use', 'automate']
+    notebook_keywords = ['jupyter', 'notebook', 'analysis', 'data analysis', 'csv analysis',
+                        'compute', 'analyze', 'metrics', 'recommendations', 'insights']
+    library_keywords = ['library', 'package', 'module', 'pip install', 'import', 'sdk']
+    api_keywords = ['api', 'rest api', 'api endpoint', 'microservice', 'backend api', 
+                   'service', 'endpoints']
+    web_app_keywords = ['web app', 'website', 'frontend', 'user interface', 'ui', 
+                       'login', 'registration', 'dashboard', 'admin panel', 'client-side']
+    
+    # Score each type
+    scores = {
+        'script': sum(1 for keyword in script_keywords if keyword in combined),
+        'notebook': sum(1 for keyword in notebook_keywords if keyword in combined),
+        'library': sum(1 for keyword in library_keywords if keyword in combined),
+        'api': sum(1 for keyword in api_keywords if keyword in combined),
+        'web_app': sum(1 for keyword in web_app_keywords if keyword in combined)
+    }
+    
+    # Return type with highest score, or 'unknown' if no clear match
+    max_score = max(scores.values())
+    if max_score == 0:
+        return 'unknown'
+    
+    # If script and notebook both have high scores, prefer notebook for analysis
+    if scores['notebook'] >= 2 and scores['script'] >= 2:
+        return 'notebook'
+    
+    for project_type, score in scores.items():
+        if score == max_score:
+            return project_type  # type: ignore
+    
+    return 'unknown'
 
 def parse_job_description(state: ArchitectState) -> ArchitectState:
     """
@@ -61,6 +107,11 @@ def parse_job_description(state: ArchitectState) -> ArchitectState:
 
     # Store the parsed analysis (we'll use this to enhance the goal)
     parsed_content = response.content
+
+    # Detect project type early
+    project_type = detect_project_type(state['goal'])
+    state['project_type'] = project_type
+    print(f"Detected project type: {project_type}")
 
     # Extract specific fields using another LLM call for structured extraction
     extraction_prompt = f"""From this analysis, extract ONLY the following in this exact format:
@@ -214,10 +265,54 @@ def generate_design(state: ArchitectState) -> ArchitectState:
     state['iteration_count'] += 1
     iteration = state['iteration_count']
 
+    # Get project type to adjust the prompt
+    project_type = state.get('project_type', 'unknown')
+    
     # Build the prompt based on whether this is initial or refinement
     if iteration == 1:
+        # Adjust prompt based on project type
+        if project_type == 'script':
+            project_guidance = """
+        **PROJECT TYPE: Python Automation Script**
+        - Focus on standalone Python scripts, not web applications
+        - No need for frontend/backend separation
+        - Focus on: data fetching, processing, file I/O, webhooks
+        - Output: Single or multiple Python files (.py), requirements.txt
+        """
+        elif project_type == 'notebook':
+            project_guidance = """
+        **PROJECT TYPE: Data Analysis Notebook**
+        - Focus on Jupyter notebooks, data analysis, visualization
+        - Include: data loading, analysis, metrics, visualizations
+        - Output: .ipynb files, data processing scripts
+        - Focus on pandas, matplotlib, data insights
+        """
+        elif project_type == 'library':
+            project_guidance = """
+        **PROJECT TYPE: Python Library/Package**
+        - Focus on reusable modules, classes, functions
+        - Include: package structure, setup.py, API design
+        - Output: Package directory structure, setup.py, README
+        """
+        elif project_type == 'api':
+            project_guidance = """
+        **PROJECT TYPE: REST API/Backend Service**
+        - Focus on API endpoints, backend logic, database
+        - No frontend needed (API only)
+        - Output: FastAPI/Flask routes, database models, requirements.txt
+        """
+        else:  # web_app or unknown
+            project_guidance = """
+        **PROJECT TYPE: Web Application**
+        - Standard web app with frontend and backend
+        - Include: UI components, API endpoints, database
+        - Output: Frontend code, backend API, full-stack structure
+        """
+        
         # Initial design
         system_prompt = f"""You are an expert software architect creating a professional Technical Design Document.
+        
+        {project_guidance}
 
         Your task is to create a detailed, client-ready architectural design document that demonstrates:
         1. Deep understanding of the requirements
@@ -231,7 +326,12 @@ def generate_design(state: ArchitectState) -> ArchitectState:
         **Code Examples from User's Codebase (for style alignment):**
         {state['code_examples']}
 
-        Generate a PROFESSIONAL Technical Design Document with the following structure:
+        Generate a PROFESSIONAL Technical Design Document. 
+        
+        **IMPORTANT**: Keep the document concise and focused. Maximum recommended length: 50,000 characters.
+        Do NOT repeat sections or content. Each section should be clear and specific.
+        
+        Structure the document as follows:
 
         # 1. EXECUTIVE SUMMARY
         - Brief overview of the project (2-3 paragraphs)
@@ -371,6 +471,21 @@ def generate_design(state: ArchitectState) -> ArchitectState:
     response = llm.invoke(messages)
     design = response.content
 
+    # Apply size limits to prevent excessive output
+    MAX_TDD_SIZE = 500000  # 500KB limit
+    if len(design) > MAX_TDD_SIZE:
+        print(f"⚠️  Warning: TDD is very large ({len(design)} chars), truncating to {MAX_TDD_SIZE} chars")
+        design = design[:MAX_TDD_SIZE]
+        design += "\n\n[Document truncated due to size limit]"
+    
+    # Check for repetition (simple heuristic: if same paragraph appears 3+ times)
+    paragraphs = design.split('\n\n')
+    if len(paragraphs) > 100:  # Very large number of paragraphs suggests repetition
+        unique_paragraphs = set(paragraphs)
+        if len(unique_paragraphs) < len(paragraphs) * 0.5:  # Less than 50% unique
+            print("⚠️  Warning: Detected potential repetition in TDD, using unique content only")
+            design = '\n\n'.join(unique_paragraphs)
+    
     # Store in history and current state
     state['design_history'].append(design)
     state['design_document'] = design
@@ -440,6 +555,7 @@ def run_architect_session(goal: str, feedback: str = None, is_job_description: b
         required_features=None,
         tech_requirements=None,
         budget_timeline=None,
+        project_type=None,  # Will be detected during parsing
         code_examples="",
         preferences="",
         design_document="",

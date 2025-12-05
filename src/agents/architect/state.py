@@ -4,7 +4,10 @@ State definition for the Architect Session workflow.
 This module defines the TypedDict state usade by the Architect Session LangGraph.
 """
 
-from typing import TypedDict, List, Optional
+from typing import TypedDict, List, Optional, Literal
+
+# Project types
+ProjectType = Literal["web_app", "script", "notebook", "library", "api", "unknown"]
 
 class ArchitectState(TypedDict):
     """State for the Architect Session workflow."""
@@ -19,6 +22,7 @@ class ArchitectState(TypedDict):
     required_features: Optional[List[str]]
     tech_requirements: Optional[List[str]]
     budget_timeline: Optional[str]
+    project_type: Optional[ProjectType] # Detected project type: web_app, script, notebook, library, api
 
     # Retrieved context
     code_examples: str

@@ -1,88 +1,57 @@
 Summary
-Machine Learning Engineer for Deal Intelligence Platform (Pilot Project)
+Project Overview
 
-Title:
-Machine Learning Engineer Needed (Graph, Embeddings, ML Matching) — Pilot Project for AI Deal Platform
+We are a consultancy working with professional services and consulting firms. We are looking for an experienced AI/Automation developer to build a production-grade document extraction application.
 
-About the Project
+The system will allow clients to:
+- Upload multiple PDF files (e.g., invoices, energy bills)
+- Automatically extract relevant fields
+- Structure the data logically
+- Return a clean Excel / CSV output suitable for analytics
 
-I’m building an AI-driven deal origination platform (companies → investors → acquirers).
-I need a skilled ML engineer to help build the first version of the intelligence layer.
+What We Need Built
 
-This is not a full-time role.
-This is a paid pilot project to build a small, working prototype of:
+- Multi-file upload capability (drag-and-drop UI or API endpoint)
+- AI-powered OCR and structured data extraction
+- Field-driven extraction logic (e.g., supplier, consumption, amount, dates, VAT, reference numbers)
+- Ability to define and refine extraction rules via prompt or configuration
+- Consolidation of multiple documents into one structured Excel file (same type of invoices)
+- Output downloadable or emailed to user
+- Logging + error handling for failed extractions
 
-Company & investor embeddings
+Nice-to-have:
+- Support for non-standard PDFs (scans, poor quality, pictures)
+- Template learning or model fine-tuning from examples
+- Dashboard to manage uploaded files and results
 
-Basic matching model (cosine similarity or simple ML model)
+Ideal Tech Approach (Flexible)
+- We are open to architecture proposals. Potential stack components include:
+- Python or Node back-end
+- LLM-based extraction (e.g., GPT/VLM APIs, tesseract/OCR, doc AI tools such as Azure Form Recognizer / AWS Textract / Google Document AI)
+- Front-end upload module (basic UI or API gateway)
+- Data pipeline for mapping results → Excel (openpyxl / pandas or equivalent)
 
-Small deal graph representation
+Desired Profile
+- You should have demonstrated experience in:
+- AI document extraction / OCR automation
+- Building production-grade SaaS components
+- Prompt-based extraction or schema-guided parsing
+- Handling messy PDF layouts, including scans
+- Generating structured data outputs
 
-Simple scoring function (fit score)
+Bonus if you’ve built:
+- invoice/billing extraction apps
+- RPA or n8n integrations
+- accounting/finance workflow tools
 
-If the collaboration is strong, this continues into advanced work (graph ML, multi-agent system, RL, etc.), but for now the scope is small and affordable.
+Deliverables:
+- Working PDF-to-Excel extraction module with API/UI
+- Backend logic allowing us to define which fields to extract
+- Excel output generator (consolidated dataset)
+- Deployment instructions + handover call
+- Documentation & maintainability notes
 
-What I Need in This First Milestone
-Milestone 1 (Fixed budget: $150–$300 depending on experience)
-
-✔ Extract text from ~50–100 companies + investors
-✔ Generate embeddings (OpenAI, HuggingFace, or similar)
-✔ Build a simple vector search or similarity scoring
-✔ Output: a list of “best-matching investors for each company”
-✔ Bonus (optional): small graph structure and simple centrality score
-
-This is an MVP intelligence layer, not the full system.
-
-Ideal Skills
-
-You should know at least a few of these:
-
-Python
-
-ML fundamentals
-
-Embeddings (OpenAI, HuggingFace, or Sentence Transformers)
-
-Vector search (Faiss, pgvector, or similar)
-
-Basic knowledge graph or graph libraries (optional but helpful)
-
-Simple ML models (logistic regression, XGBoost, etc.)
-
-You do NOT need deep RL or multi-agent experience at this stage.
-
-Deliverables
-
-Clean Python notebook or script
-
-A CSV/JSON showing:
-
-Embeddings
-
-Fit scores
-
-Ranked investor lists
-
-Short explanation of your approach
-
-Requirements
-
-Be fast and reliable
-
-Be comfortable with early-stage ambiguity
-
-Speak clear English
-
-Deliver small results quickly
-
-If you’re strong, I will continue with you for bigger, well-compensated tasks later (graph ML, personalization engine, agent system, etc.)
-
-How to Apply
-
-Send:
-
-A short example of any embedding-based or matching project you built
-
-Your proposed fixed price for Milestone 1
-
-When you can start
+Later extensions (separate paid milestones) may include:
+- Client accounts & dashboards
+- Extraction rule training interface
+- Upload → Processing queue → Analytics pipelines

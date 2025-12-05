@@ -27,6 +27,7 @@ class DevTeamState(TypedDict):
     tdd_content: Optional[str]                    # Full TDD markdown from Phase 1
     tdd_parsed: Optional[bool]                    # Whether TDD has been parsed
     project_metadata: Optional[Dict[str, str]]    # Project name, version, etc.
+    project_type: Optional[str]                   # Project type: web_app, script, notebook, library, api
     tech_stack: Optional[Dict[str, List[str]]]    # frontend, backend, database, etc.
     features_to_implement: Optional[List[Dict[str, str]]]  # Extracted features
     api_specification: Optional[Dict[str, Any]]   # API endpoints, base_url, version
