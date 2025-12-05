@@ -1,0 +1,11 @@
+from app.api.endpoints.products import router as products_router
+
+api_router = APIRouter()
+
+api_router.include_router(products_router, prefix="/products", tags=["Products"])
+
+# --- Endpoint Enumerator (Pattern 4) ---
+# While not a direct class implementation here, the structure of api_router
+# and its included routers effectively enumerates the available API endpoints.
+# For a more explicit implementation, one could create a utility function
+# that inspects api_router.routes to list all available paths and methods.

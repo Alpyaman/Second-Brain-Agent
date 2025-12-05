@@ -1,0 +1,140 @@
+from httpx import AsyncClient
+from app.main import app
+from app.schemas.products import ProductCreate
+from app.core.database import get_db
+from sqlalchemy.orm import Session
+from app.models.products import Product as ProductModel
+
+# --- Polyfactory Usage (Pattern 3) ---
+# For more complex testing, you'd integrate a factory like polyfactory.
+# For this example, we'll use direct data creation.
+# Example:
+# from polyfactory.factories import DataclassFactory
+# class ProductCreateFactory(DataclassFactory):
+#     __model__ = ProductCreate
+
+@pytest.fixture(scope="module")
+def app_client():
+    client = AsyncClient(app=app, base_url="http://test")
+    yield client
+    await client.aclose()
+
+# Helper to get a test database session
+@pytest.fixture(scope="function")
+async def test_db():
+    # In a real scenario, you'd use a separate test database or transactions
+    # For simplicity here, we'll use the main DB and clean up after each test.
+    from app.core.database import SessionLocal
+    db = SessionLocal()
+    yield db
+    # Clean up the database after each test function
+    db.query(ProductModel).delete()
+    db.commit()
+    db.close()
+
+# --- Test for creating a product ---
+@pytest.mark.asyncio
+async def test_create_product(app_client: AsyncClient, test_db: Session):
+    product_data = ProductCreate(name="Test Product", description="A test product", price=19.99, stock=100)
+    response = await app_client.post("/api/v1/products/", json=product_data.model_dump())
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Test Product"
+    assert data["price"] == 19.99
+    assert "id" in data
+
+# --- Test for fetching all products ---
+@pytest.mark.asyncio
+async def test_read_products(app_client: AsyncClient, test_db: Session):
+    # Ensure there's at least one product
+    product_data = ProductCreate(name="Another Product", description="Another test", price=29.99, stock=50)
+    await app_client.post("/api/v1/products/", json=product_data.model_dump())
+
+    response = await app_client.get("/api/v1/products/")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+
+# --- Test for fetching a single product ---
+@pytest.mark.asyncio
+async def test_read_product(app_client: AsyncClient, test_db: Session):
+    # Create a product first
+    product_data = ProductCreate(name="Single Product", description="For single fetch", price=9.99, stock=20)
+    create_response = await app_client.post("/api/v1/products/", json=product_data.model_dump())
+    product_id = create_response.json()["id"]
+
+    response = await app_client.get(f"/api/v1/products/{product_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == product_id
+    assert data["name"] == "Single Product"
+
+# --- Test for fetching a non-existent product ---
+@pytest.mark.asyncio
+async def test_read_nonexistent_product(app_client: AsyncClient):
+    response = await app_client.get("/api/v1/products/9999")
+    assert response.status_code == 404
+
+# --- Test for updating a product ---
+@pytest.mark.asyncio
+async def test_update_product(app_client: AsyncClient, test_db: Session):
+    # Create a product first
+    product_data = ProductCreate(name="Updatable Product", description="Initial desc", price=50.00, stock=10)
+    create_response = await app_client.post("/api/v1/products/", json=product_data.model_dump())
+    product_id = create_response.json()["id"]
+
+    update_payload = {"price": 55.50, "stock": 5}
+    response = await app_client.put(f"/api/v1/products/{product_id}", json=update_payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == product_id
+    assert data["price"] == 55.50
+    assert data["stock"] == 5
+    assert data["description"] == "Initial desc" # Ensure other fields are not changed
+
+# --- Test for updating a non-existent product ---
+@pytest.mark.asyncio
+async def test_update_nonexistent_product(app_client: AsyncClient):
+    update_payload = {"price": 100.00}
+    response = await app_client.put("/api/v1/products/9999", json=update_payload)
+    assert response.status_code == 404
+
+# --- Test for deleting a product ---
+@pytest.mark.asyncio
+async def test_delete_product(app_client: AsyncClient, test_db: Session):
+    # Create a product first
+    product_data = ProductCreate(name="Deletable Product", description="To be deleted", price=10.00, stock=1)
+    create_response = await app_client.post("/api/v1/products/", json=product_data.model_dump())
+    product_id = create_response.json()["id"]
+
+    response = await app_client.delete(f"/api/v1/products/{product_id}")
+    assert response.status_code == 204 # No Content
+
+    # Verify it's deleted
+    get_response = await app_client.get(f"/api/v1/products/{product_id}")
+    assert get_response.status_code == 404
+
+# --- Test for deleting a non-existent product ---
+@pytest.mark.asyncio
+async def test_delete_nonexistent_product(app_client: AsyncClient):
+    response = await app_client.delete("/api/v1/products/9999")
+    assert response.status_code == 404
+
+# --- Test for input validation (e.g., negative price) ---
+@pytest.mark.asyncio
+async def test_create_product_invalid_price(app_client: AsyncClient):
+    invalid_product_data = {"name": "Invalid", "price": -5.00, "stock": 10}
+    response = await app_client.post("/api/v1/products/", json=invalid_product_data)
+    assert response.status_code == 422 # Unprocessable Entity
+    assert "price" in response.json()["detail"][0]["loc"]
+    assert "must be greater than 0" in response.json()["detail"][0]["msg"]
+
+# --- Test for input validation (e.g., missing required field) ---
+@pytest.mark.asyncio
+async def test_create_product_missing_field(app_client: AsyncClient):
+    invalid_product_data = {"description": "No name", "price": 10.00, "stock": 10}
+    response = await app_client.post("/api/v1/products/", json=invalid_product_data)
+    assert response.status_code == 422
+    assert "name" in response.json()["detail"][0]["loc"]
+    assert "field required" in response.json()["detail"][0]["msg"]

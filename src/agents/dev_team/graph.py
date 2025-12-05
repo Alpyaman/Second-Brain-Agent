@@ -504,6 +504,8 @@ def extract_code_node(state: DevTeamState) -> DevTeamState:
         except Exception as e:
             print(f"Error extracting frontend files: {e}")
             state['frontend_files'] = {}
+    else:
+        state['frontend_files'] = {}
 
     # Extract backend files
     if state.get('backend_code') and state['backend_code'].strip():
@@ -519,6 +521,8 @@ def extract_code_node(state: DevTeamState) -> DevTeamState:
         except Exception as e:
             print(f"Error extracting backend files: {e}")
             state['backend_files'] = {}
+    else:
+        state['backend_files'] = {}
 
     total_files = len(state.get('frontend_files', {})) + len(state.get('backend_files', {}))
     print(f"\nTotal code files extracted: {total_files}")
@@ -596,13 +600,13 @@ def write_files_node(state: DevTeamState) -> DevTeamState:
     output_path.mkdir(parents=True, exist_ok=True)
     print(f"\nOutput directory: {output_path.absolute()}")
 
-    # Collect all files
+    # Collect all files (handle None values with or {})
     all_files = {}
-    all_files.update(state.get('frontend_files', {}))
-    all_files.update(state.get('backend_files', {}))
-    all_files.update(state.get('config_files', {}))
-    all_files.update(state.get('database_files', {}))
-    all_files.update(state.get('test_files', {}))
+    all_files.update(state.get('frontend_files') or {})
+    all_files.update(state.get('backend_files') or {})
+    all_files.update(state.get('config_files') or {})
+    all_files.update(state.get('database_files') or {})
+    all_files.update(state.get('test_files') or {})
 
     if not all_files:
         print("\n⚠ No files to write!")
