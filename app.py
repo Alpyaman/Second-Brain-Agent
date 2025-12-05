@@ -378,7 +378,7 @@ async def generate_mvp(request: JobDescriptionRequest):
 
             result = run_dev_team_v2(
                 tdd_content=tdd_content,
-                output_dir=str(output_dir),
+                output_directory=str(output_dir),
                 phase=1
             )
 
