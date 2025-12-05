@@ -194,8 +194,6 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
     print("FRONTEND SPECIALIST: Implementing UI")
     print("=" * 70)
 
-    state['frontend_status'] = 'in_progress'
-
     # Combine tasks into a single query
     tasks_summary = " + ".join(state['frontend_tasks'])
     print(f"Tasks: {tasks_summary}\n")
@@ -203,14 +201,16 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
     # CRITICAL: Query frontend_brain (NOT backend_brain!)
     print("Retrieving patterns from frontend_brain...")
     context = query_expert_brain(query=tasks_summary, collection_name="frontend_brain", k=5)
-    state['frontend_context'] = context
 
     if "No patterns found" in context or "Error accessing" in context:
         print("Frontend brain not available")
         print("   Run: python src/ingest_expert.py --expert frontend --list")
-        state['frontend_code'] = "# Frontend brain not initialized. Please ingest expert knowledge."
-        state['frontend_status'] = 'completed'
-        return state
+        # Return only the keys this node modifies to avoid parallel update conflicts
+        return {
+            'frontend_code': "# Frontend brain not initialized. Please ingest expert knowledge.",
+            'frontend_status': 'completed',
+            'frontend_context': context
+        }
 
     print("Retrieved frontend patterns\n")
 
@@ -241,12 +241,15 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
     response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
-    state['frontend_code'] = response.content
-    state['frontend_status'] = 'completed'
+    frontend_code = response.content
+    print(f"Generated frontend code ({len(frontend_code)} characters)")
 
-    print(f"Generated frontend code ({len(state['frontend_code'])} characters)")
-
-    return state
+    # Return only the keys this node modifies to avoid parallel update conflicts
+    return {
+        'frontend_code': frontend_code,
+        'frontend_status': 'completed',
+        'frontend_context': context
+    }
 
 
 # ============================================================================
@@ -264,23 +267,23 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
     print("BACKEND SPECIALIST: Implementing API")
     print("=" * 70)
 
-    state['backend_status'] = 'in_progress'
-
-    # Combine tasks into a single query
+   # Combine tasks into a single query
     tasks_summary = " + ".join(state['backend_tasks'])
     print(f"Tasks: {tasks_summary}\n")
 
     # CRITICAL: Query backend_brain (NOT frontend_brain!)
     print("Retrieving patterns from backend_brain...")
     context = query_expert_brain(query=tasks_summary, collection_name="backend_brain", k=5)
-    state['backend_context'] = context
 
     if "No patterns found" in context or "Error accessing" in context:
         print("Backend brain not available")
         print("   Run: python src/ingest_expert.py --expert backend --list")
-        state['backend_code'] = "# Backend brain not initialized. Please ingest expert knowledge."
-        state['backend_status'] = 'completed'
-        return state
+        # Return only the keys this node modifies to avoid parallel update conflicts
+        return {
+            'backend_code': "# Backend brain not initialized. Please ingest expert knowledge.",
+            'backend_status': 'completed',
+            'backend_context': context
+        }
 
     print("✓ Retrieved backend patterns\n")
 
@@ -311,12 +314,15 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
     response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
-    state['backend_code'] = response.content
-    state['backend_status'] = 'completed'
+    backend_code = response.content
+    print(f"Generated backend code ({len(backend_code)} characters)")
 
-    print(f"Generated backend code ({len(state['backend_code'])} characters)")
-
-    return state
+    # Return only the keys this node modifies to avoid parallel update conflicts
+    return {
+        'backend_code': backend_code,
+        'backend_status': 'completed',
+        'backend_context': context
+    }
 
 
 # ============================================================================
