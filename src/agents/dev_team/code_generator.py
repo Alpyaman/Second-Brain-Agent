@@ -10,7 +10,12 @@ from typing import Dict, List, Tuple
 
 def extract_code_blocks(markdown_text: str) -> List[Tuple[str, str, str]]:
     """
-    Extract code blocks from markdown text.
+    Extract code blocks from markdown text with improved filename detection.
+
+    Handles multiple filename patterns:
+    1. ```python path/to/file.py
+    2. # path/to/file.py as first line in code block
+    3. ### path/to/file.py header before code block
 
     Args:
         markdown_text: Markdown text containing code blocks
@@ -20,15 +25,45 @@ def extract_code_blocks(markdown_text: str) -> List[Tuple[str, str, str]]:
     """
     code_blocks = []
 
+    # Split by code block markers to process each block individually
     # Pattern to match code blocks with optional file paths
-    # Matches: ```language [path/to/file.ext]
+    # Matches: ```language [optional_path]
     pattern = r'```(\w+)(?:\s+([^\n]+))?\n(.*?)```'
 
-    matches = re.findall(pattern, markdown_text, re.DOTALL)
+    # Also check for headers before code blocks (e.g., ### app/main.py)
+    lines = markdown_text.split('\n')
+    markdown_with_headers = []
+
+    for i, line in enumerate(lines):
+        # Check if line is a header that looks like a file path
+        if line.startswith('#') and any(ext in line for ext in ['.py', '.js', '.ts', '.tsx', '.jsx', '.json', '.yaml', '.yml']):
+            # Extract the file path from the header
+            file_path = line.lstrip('#').strip()
+            # Look ahead to see if next line starts a code block
+            if i + 1 < len(lines) and lines[i + 1].startswith('```'):
+                # Insert the file path into the code block header
+                lines[i + 1] = lines[i + 1].replace('```', f'```python {file_path}\n', 1)
+                continue
+        markdown_with_headers.append(line)
+
+    enhanced_markdown = '\n'.join(markdown_with_headers)
+    matches = re.findall(pattern, enhanced_markdown, re.DOTALL)
 
     for language, file_path, code in matches:
         file_path = file_path.strip() if file_path else ""
         code = code.strip()
+
+        # If no file path in header, check first line of code for comment with filename
+        if not file_path and code:
+            first_line = code.split('\n')[0].strip()
+            # Check for comment with filename (e.g., # app/main.py or // app/main.js)
+            if first_line.startswith('#') or first_line.startswith('//'):
+                potential_path = first_line.lstrip('#/').strip()
+                # Check if it looks like a file path
+                if '.' in potential_path and '/' in potential_path and ' ' not in potential_path:
+                    file_path = potential_path
+                    # Remove the comment line from code
+                    code = '\n'.join(code.split('\n')[1:]).strip()
         if code:
             code_blocks.append((language, file_path, code))
 

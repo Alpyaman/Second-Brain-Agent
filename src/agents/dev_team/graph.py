@@ -236,6 +236,12 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
         4. Handles errors gracefully
         5. Includes clear API integration points
 
+        IMPORTANT: Format each file as a code block with the file path in a header:
+        ### app/components/ProductList.tsx
+        ```typescript
+        // File content here
+        ```
+
         Provide the complete implementation with file structure."""
 
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
@@ -308,6 +314,12 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
         4. Includes input validation
         5. Has clear database integration
         6. Follows REST best practices
+
+        IMPORTANT: Format each file as a code block with the file path in a header:
+        ### app/components/ProductList.tsx
+        ```typescript
+        // File content here
+        ```
 
         Provide the complete implementation with file structure."""
 
