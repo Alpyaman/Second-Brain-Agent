@@ -35,7 +35,7 @@ try:
     MULTI_MODEL_AVAILABLE = True
 except ImportError:
     MULTI_MODEL_AVAILABLE = False
-    print("⚠️  Multi-model support not available in dev_team. Using legacy Google Gemini only.")
+    print("Multi-model support not available in dev_team. Using legacy Google Gemini only.")
 
 # ============================================================================
 # PYDANTIC MODELS FOR STRUCTURED OUTPUT
@@ -93,7 +93,9 @@ def query_expert_brain(query: str, collection_name: str, k: int = 5) -> str:
         results = vectorstore.similarity_search(query, k=k)
 
         if not results:
-            return f"No patterns found in {collection_name}. Please ingest expert knowledge first."
+            # Return empty instead of error message
+            print(f"No patterns found in {collection_name}")
+            return ""
 
         # Format retrieved patterns
         context_parts = []
@@ -109,7 +111,10 @@ def query_expert_brain(query: str, collection_name: str, k: int = 5) -> str:
         return "\n\n".join(context_parts)
 
     except Exception as e:
-        return f"Error accessing {collection_name}: {str(e)}\nPlease run: python src/ingest_expert.py --expert <type> --list"
+        # Return empty context instead of error - let the agent still generate code
+        print(f"Warning: Could not access {collection_name}: {str(e)}")
+        print("   Continuing without RAG context...")
+        return ""  # Empty context - agent will still generate code without patterns
 
 
 # ============================================================================
@@ -277,10 +282,14 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
     # CRITICAL: Query frontend_brain (NOT backend_brain!)
     print("Retrieving patterns from frontend_brain...")
     context = query_expert_brain(query=tasks_summary, collection_name="frontend_brain", k=5)
+    # Check if context retrieval failed or is empty
+    if not context or "Backend brain not" in context or "Error accessing" in context:
+        print("Backend brain not available")
+        print("   Run: python src/ingest_expert.py --expert backend --list")
+        context = ""  # Use empty context - will still generate code
+    else:
+        print("Retrieved backend patterns")
 
-    if "No patterns found" in context or "Error accessing" in context:
-        print("Frontend brain not available")
-        print("   Run: python src/ingest_expert.py --expert frontend --list")
         # Return only the keys this node modifies to avoid parallel update conflicts
         return {
             'frontend_code': "# Frontend brain not initialized. Please ingest expert knowledge.",
@@ -382,17 +391,6 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
             'backend_context': context
         }
 
-        if "No patterns found" in context or "Error accessing" in context:
-            print("Backend brain not available")
-            print("   Run: python src/ingest_expert.py --expert backend --list")
-            return {
-                'backend_code': "# Backend brain not initialized. Please ingest expert knowledge.",
-                'backend_status': 'completed',
-                'backend_context': context
-            }
-
-        print("✓ Retrieved backend patterns\n")
-
     # Generate code - adjust prompt based on project type
     if project_type == 'notebook':
         system_prompt = """You are a Python Data Analysis Specialist.
@@ -412,16 +410,28 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
         4. Visualizations and insights
         5. Clear, commented code
 
-        Format files as:
+        CRITICAL: You MUST provide COMPLETE, WORKING code for EVERY file.
+        Do NOT just list files - provide the FULL implementation.
+
+        Format each file as:
         ### scripts/promo_code_assigner.py
         ```python
-        # Code here
+        import requests
+        import json
+        # ... COMPLETE file implementation here with ALL code
         ```
-        
+
         ### notebooks/campaign_analysis.ipynb
         ```python
-        # Jupyter notebook cells here
-        ```"""
+        # %% [markdown]
+        # # Campaign Analysis
+
+        # %%
+        import pandas as pd
+        # ... COMPLETE notebook implementation with ALL cells
+        ```
+
+        Provide COMPLETE code for ALL files - not summaries or placeholders."""
         
     elif project_type == 'script':
         system_prompt = """You are a Python Automation Specialist.
@@ -443,11 +453,23 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
         6. Send POST requests to webhooks
         7. Use requests, json, pandas libraries
 
-        Format files as:
+        CRITICAL: You MUST provide COMPLETE, WORKING code for EVERY file.
+
+        Do NOT describe what the code should do - WRITE the actual code.
+
+        Format each file as:
         ### scripts/promo_code_assigner.py
         ```python
-        # Complete script implementation
-        ```"""
+        import requests
+        import json
+        import pandas as pd
+        from typing import Dict, List
+
+        # ... COMPLETE implementation with ALL functions and code
+        # Include EVERYTHING needed to run the script
+        ```
+
+        Provide FULL, COMPLETE implementations - not summaries or outlines."""
         
     else:
         # Default: API/Backend
@@ -462,7 +484,7 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
         {state['architecture_notes']}
 
         Retrieved Patterns from backend_brain:
-        {context}
+        {context if context else "No patterns available - generating from best practices"}
 
         Generate production-ready backend code that:
         1. Follows the patterns shown above
@@ -472,13 +494,43 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
         5. Has clear database integration
         6. Follows REST best practices
 
-        IMPORTANT: Format each file as a code block with the file path in a header:
-        ### app/core/config.py
+        CRITICAL FORMATTING REQUIREMENTS:
+        - You MUST provide the COMPLETE CODE for EVERY file mentioned
+        - Do NOT just describe the file structure - WRITE THE ACTUAL CODE
+        - Each file must be a separate code block with the file path as a header
+        - Use this exact format for EACH file:
+
+        ### path/to/file.py
         ```python
-        # File content here
+        # Complete file contents here
+        # Include ALL imports, ALL functions, ALL code
         ```
 
-        Provide the complete implementation with file structure."""
+        EXAMPLE - This is how you should format EVERY file:
+        ### app/core/config.py
+        ```python
+        from pydantic_settings import BaseSettings
+
+        class Settings(BaseSettings):
+            app_name: str = "My App"
+            debug: bool = False
+
+        settings = Settings()
+        ```
+
+        ### app/main.py
+        ```python
+        from fastapi import FastAPI
+        from app.core.config import settings
+
+        app = FastAPI(title=settings.app_name)
+
+        @app.get("/")
+        def read_root():
+            return {{"message": "Hello World"}}
+        ```
+
+        REMEMBER: Provide COMPLETE, WORKING code for EVERY file you mention. Do not skip any files or provide partial implementations."""
 
     # Use coding-optimized model for backend generation
     if MULTI_MODEL_AVAILABLE:
