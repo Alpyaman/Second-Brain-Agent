@@ -6,6 +6,11 @@ This module implements an interactive architectural design session that:
 2. Fetches your coding preferences
 3. Generates a design document aligned with your style
 4. Supports iterative refinement based on feedback
+
+Features:
+- Multi-provider LLM support via llm_factory
+- Task-optimized model selection
+- Backward compatible with legacy Google Gemini
 """
 
 import os
@@ -13,6 +18,14 @@ from typing import Literal, Optional, List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
+
+# Import multi-model support
+try:
+    from src.core.llm_factory import get_llm
+    MULTI_MODEL_AVAILABLE = True
+except ImportError:
+    MULTI_MODEL_AVAILABLE = False
+    print("⚠️  Multi-model support not available in architect. Using legacy Google Gemini only.")
 from langgraph.graph import StateGraph, END
 
 from src.agents.architect.state import ArchitectState, ProjectType
@@ -83,7 +96,11 @@ def parse_job_description(state: ArchitectState) -> ArchitectState:
 
     print("Parsing job description to extract requirements...")
 
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.2)
+    # Use LLM factory if available, otherwise fallback to Google Gemini
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="parsing")
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.2)
 
     system_prompt = """You are an expert at analyzing freelance job postings and extracting structured requirements.
 
@@ -462,8 +479,11 @@ def generate_design(state: ArchitectState) -> ArchitectState:
 
         Please refine the Technical Design Document based on the feedback provided."""
 
-    # Initialize Gemini
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.4)
+    # Initialize LLM - use powerful model for reasoning/design tasks
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="reasoning")
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.4)
 
     # Generate the design
     messages = [("system", system_prompt), ("user", user_prompt)]

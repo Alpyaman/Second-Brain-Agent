@@ -3,6 +3,11 @@ TDD (Technical Design Document) Parser
 
 This module provides utilities to parse Technical Design Documents from Phase 1 (Architect)
 and extract actionable information for code generation.
+
+Features:
+- Sequential parsing (backward compatible)
+- Parallel parsing (optimized for speed)
+- Multi-provider LLM support via llm_factory
 """
 import re
 from typing import Dict, List, Any, Optional
@@ -13,6 +18,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# Import new multi-model utilities
+try:
+    from src.core.llm_factory import get_llm
+    from src.core.async_llm_executor import AsyncLLMExecutor
+    MULTI_MODEL_AVAILABLE = True
+except ImportError:
+    MULTI_MODEL_AVAILABLE = False
+    print("⚠️  Multi-model support not available. Using legacy Google Gemini only.")
 
 # OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2")
 # OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -77,8 +91,11 @@ def extract_technology_stack(tdd_content: str) -> Dict[str, List[str]]:
             'third_party': []
         }
 
-    # Use LLM to extract structured tech stack
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
+    # Use LLM to extract structured tech stack - fast parsing model
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="parsing", temperature=0.1)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     prompt = f"""Extract the technology stack from this section and format as:
     FRONTEND: technology1, technology2
@@ -132,8 +149,11 @@ def extract_api_endpoints(tdd_content: str) -> List[Dict[str, str]]:
     if not api_section:
         return []
 
-    # Use LLM to extract API endpoints
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
+    # Use LLM to extract API endpoints - fast parsing model
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="parsing", temperature=0.1)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     prompt = f"""Extract all API endpoints from this section. For each endpoint, provide:
     METHOD: GET/POST/PUT/DELETE/PATCH
@@ -200,8 +220,11 @@ def extract_data_model(tdd_content: str) -> Dict[str, Dict[str, str]]:
     if not data_section:
         return {}
 
-    # Use LLM to extract data model
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
+    # Use LLM to extract data model - fast parsing model
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="parsing", temperature=0.1)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     prompt = f"""Extract all entities and their fields from this data model section.
     Format each entity like:
@@ -270,8 +293,11 @@ def extract_features_to_implement(tdd_content: str, phase: Optional[int] = 1, pr
     if not impl_section:
         return []
 
-    # Use LLM to extract features
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
+    # Use LLM to extract features - fast parsing model
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="parsing", temperature=0.1)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.1)
 
     phase_filter = f"Focus on Phase {phase} features only." if phase else "Extract features from all phases."
     
@@ -405,6 +431,19 @@ def parse_tdd_to_state(tdd_content: str, phase: Optional[int] = 1, project_type:
     Returns:
         Dictionary with parsed TDD information ready for dev_team state
     """
+    # Check if parallel parsing is enabled
+    use_parallel = os.getenv("ENABLE_PARALLEL_PARSING", "true").lower() == "true"
+
+    if use_parallel and MULTI_MODEL_AVAILABLE:
+        return parse_tdd_to_state_parallel(tdd_content, phase, project_type)
+    else:
+        return parse_tdd_to_state_sequential(tdd_content, phase, project_type)
+
+
+def parse_tdd_to_state_sequential(tdd_content: str, phase: Optional[int] = 1, project_type: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Sequential (legacy) parsing - processes one extraction at a time.
+    """
     print("Parsing TDD document...")
 
     # Extract all components (pass project_type to feature extraction)
@@ -414,6 +453,57 @@ def parse_tdd_to_state(tdd_content: str, phase: Optional[int] = 1, project_type:
     api_endpoints = extract_api_endpoints(tdd_content)
     data_model = extract_data_model(tdd_content)
     security_reqs = extract_security_requirements(tdd_content)
+
+    print(f"Extracted: {len(features)} features, {len(api_endpoints)} API endpoints, {len(data_model)} entities")
+
+    return {
+        'project_metadata': metadata,
+        'tech_stack': tech_stack,
+        'features_to_implement': features,
+        'api_specification': {
+            'endpoints': api_endpoints,
+            'base_url': '/api',  # Default, can be customized
+            'version': 'v1'
+        },
+        'data_model': data_model,
+        'security_requirements': security_reqs,
+        'implementation_phase': phase,
+        'tdd_parsed': True
+    }
+
+
+def parse_tdd_to_state_parallel(tdd_content: str, phase: Optional[int] = 1, project_type: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Parallel (optimized) parsing - processes multiple extractions simultaneously.
+
+    This can reduce parsing time by 50-70% by running independent LLM calls in parallel.
+    """
+    print("Parsing TDD document (parallel mode)...")
+
+    # Metadata and security don't need LLM, extract immediately
+    metadata = extract_project_metadata(tdd_content)
+    security_reqs = extract_security_requirements(tdd_content)
+
+    # Define parallel tasks for LLM-based extraction
+    with AsyncLLMExecutor(max_workers=4) as executor:
+        tasks = [
+            lambda: extract_technology_stack(tdd_content),
+            lambda: extract_features_to_implement(tdd_content, phase, project_type),
+            lambda: extract_api_endpoints(tdd_content),
+            lambda: extract_data_model(tdd_content)
+        ]
+
+        task_names = [
+            "Extract Technology Stack",
+            "Extract Features",
+            "Extract API Endpoints",
+            "Extract Data Model"
+        ]
+
+        # Run all extractions in parallel
+        results = executor.run_parallel(tasks, task_names=task_names)
+
+        tech_stack, features, api_endpoints, data_model = results
 
     print(f"Extracted: {len(features)} features, {len(api_endpoints)} API endpoints, {len(data_model)} entities")
 

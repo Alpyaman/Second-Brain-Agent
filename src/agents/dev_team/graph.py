@@ -6,6 +6,11 @@ This module implements a software development team where each agent has:
 2. DISTINCT CAPABILITIES: Domain-specific tools and expertise
 
 This is NOT "just wrapping an LLM" - each agent learns from different codebases.
+
+Features:
+- Multi-provider LLM support via llm_factory
+- Task-optimized model selection (parsing, coding, review)
+- Backward compatible with legacy Google Gemini
 """
 
 import os
@@ -23,6 +28,14 @@ from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# Import multi-model support
+try:
+    from src.core.llm_factory import get_llm
+    MULTI_MODEL_AVAILABLE = True
+except ImportError:
+    MULTI_MODEL_AVAILABLE = False
+    print("⚠️  Multi-model support not available in dev_team. Using legacy Google Gemini only.")
 
 # ============================================================================
 # PYDANTIC MODELS FOR STRUCTURED OUTPUT
@@ -185,8 +198,11 @@ def tech_lead_dispatcher(state: DevTeamState) -> DevTeamState:
         user_prompt = f"""Feature Request: {state['feature_request']}
         Decompose this feature into frontend tasks, backend tasks, and architecture notes."""
 
-    # Use structured output with Pydantic model
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
+    # Use structured output with Pydantic model - reasoning task
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="reasoning", temperature=0.3)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
     structured_llm = llm.with_structured_output(TechLeadDecomposition)
 
     # Generate decomposition with guaranteed structure
@@ -304,7 +320,11 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
 
         Provide the complete implementation with file structure."""
 
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
+    # Use coding-optimized model for frontend generation
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="coding", temperature=0.3)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
     response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
     frontend_code = response.content
@@ -460,7 +480,11 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
 
         Provide the complete implementation with file structure."""
 
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
+    # Use coding-optimized model for backend generation
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="coding", temperature=0.3)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
     response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
     backend_code = response.content
@@ -538,7 +562,11 @@ def integration_reviewer(state: DevTeamState) -> DevTeamState:
         STATUS: [pass/needs_revision/fail]
     """
 
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.2)
+    # Use review-optimized model for integration review
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="review", temperature=0.2)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.2)
     response = llm.invoke([("system", system_prompt), ("user", user_prompt)])
 
     review_content = response.content
