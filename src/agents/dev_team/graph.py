@@ -346,6 +346,215 @@ def frontend_developer(state: DevTeamState) -> DevTeamState:
         'frontend_context': context
     }
 
+# ============================================================================
+# HELPER: ITERATIVE MODULE GENERATION (DIVIDE-AND-CONQUER)
+# ============================================================================
+
+def generate_script_modules_iteratively(state: DevTeamState) -> str:
+    """
+    Generate script modules using TRUE divide-and-conquer approach.
+
+    Phase 1: Get module plan (1 LLM call)
+    Phase 2: Generate each module individually (N LLM calls)
+
+    This ensures all modules are generated completely without overwhelming the LLM.
+    """
+    print("\nDIVIDE-AND-CONQUER: Iterative Module Generation")
+    print("=" * 70)
+
+    # Get LLM
+    if MULTI_MODEL_AVAILABLE:
+        llm = get_llm(task_type="coding", temperature=0.3)
+    else:
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
+
+    tasks_text = "\n".join(f"- {task}" for task in state['backend_tasks'])
+    arch_notes = state['architecture_notes']
+
+    # ============================================================================
+    # PHASE 1: GET MODULE PLAN
+    # ============================================================================
+    print("\n[Phase 1/2] Getting module plan...")
+
+    plan_prompt = f"""You are a Python Automation Specialist creating a module plan.
+
+    Tasks to implement:
+    {tasks_text}
+
+    Architecture Context:
+    {arch_notes}
+
+    Create a detailed module plan. Analyze the tasks and determine what modules are needed.
+
+    Format your plan EXACTLY like this:
+
+    ## MODULE PLAN
+
+    **1. module_name.py**
+    - Responsibility: What this module does
+    - Key functions: function1(), function2()
+    - Dependencies: library1, library2
+
+    **2. another_module.py**
+    - Responsibility: What this module does
+    - Key functions: function1()
+    - Dependencies: library1
+
+    **N. main.py**
+    - Responsibility: Orchestrate the entire workflow
+    - Key functions: main()
+    - Dependencies: module_name, another_module, argparse
+
+    CRITICAL:
+    - Base your plan on the ACTUAL tasks above
+    - Use descriptive module names that match the functionality
+    - Include main.py as the last module
+    - List ALL modules needed (typically 3-7 modules)
+
+    Output ONLY the module plan, nothing else."""
+
+    plan_response = llm.invoke([("user", plan_prompt)])
+    plan_text = plan_response.content
+
+    # Parse the plan
+    # Debug: Show what the LLM returned
+    print("\nLLM Plan Response (first 500 chars):")
+    print(f"{plan_text[:500]}...")
+
+    # Parse the plan
+    planned_modules = extract_module_plan(plan_text)
+
+    if not planned_modules:
+        print("\n  Failed to extract module plan from LLM response.")
+        print(f"   Response length: {len(plan_text)} chars")
+        print("   Checking for '## MODULE PLAN' pattern...")
+
+        if '## MODULE PLAN' in plan_text.upper():
+            print("   Found '## MODULE PLAN' in response")
+        else:
+            print("   '## MODULE PLAN' not found in response")
+
+        print("\n   Falling back to single-call generation.")
+        # Fallback to original approach if plan extraction fails
+        return generate_script_single_call(state, llm)
+
+    print(f"Plan created with {len(planned_modules)} modules:")
+    for i, module in enumerate(planned_modules, 1):
+        print(f"  {i}. {module}")
+
+    # ============================================================================
+    # PHASE 2: GENERATE EACH MODULE INDIVIDUALLY
+    # ============================================================================
+    print(f"\n[Phase 2/2] Generating {len(planned_modules)} modules individually...")
+
+    generated_modules = []
+    generated_modules.append(plan_text)  # Include the plan in output
+    generated_modules.append("\n\n" + "=" * 70)
+    generated_modules.append("## GENERATED MODULES")
+    generated_modules.append("=" * 70 + "\n")
+
+    for i, module_name in enumerate(planned_modules, 1):
+        print(f"\n  [{i}/{len(planned_modules)}] Generating {module_name}...")
+
+        module_prompt = f"""Generate COMPLETE, WORKING code for the module: {module_name}
+
+        Context:
+        Tasks: {tasks_text}
+        Architecture: {arch_notes}
+
+        Module Plan (for reference):
+        {plan_text}
+
+        Your task: Generate ONLY the {module_name} module.
+
+        Requirements:
+        1. Provide COMPLETE implementation (no placeholders, no "pass", no "...")
+        2. Include ALL necessary imports
+        3. If this module imports from other modules in the plan, use those imports
+        4. Write production-ready, working code
+        5. Include docstrings and error handling
+
+        Format:
+        ### scripts/{module_name}
+        ```python
+        # Complete implementation here
+        import necessary_libraries
+
+        def function_name():
+            # Full working implementation
+            actual_code_here
+            return result
+        ```
+
+        Generate ONLY {module_name}, nothing else. Make it complete and runnable."""
+
+        try:
+            module_response = llm.invoke([("user", module_prompt)])
+            module_code = module_response.content
+
+            # Clean the module code: extract just the code block
+            # LLM might add preamble like "Here is the implementation..."
+            # We want to extract: ### scripts/module_name.py ... ```python ... ```
+
+            import re
+
+            # Check if the response has the expected format
+            if f"### scripts/{module_name}" in module_code or f"###scripts/{module_name}" in module_code:
+                # Response has proper format, use as-is
+                generated_modules.append(f"\n{module_code}\n")
+                print(f"  {module_name} generated ({len(module_code)} chars)")
+            else:
+                # Response might have preamble, try to extract the code block
+                # Look for python code blocks
+                code_block_pattern = r'```python\s*\n(.*?)\n```'
+                code_matches = re.findall(code_block_pattern, module_code, re.DOTALL)
+
+                if code_matches:
+                    # Found code block(s), wrap in proper format
+                    actual_code = code_matches[0]  # Take first code block
+                    formatted_code = f"### scripts/{module_name}\n```python\n{actual_code}\n```"
+                    generated_modules.append(f"\n{formatted_code}\n")
+                    print(f"  {module_name} generated ({len(actual_code)} chars, extracted from response)")
+                else:
+                    # No code block found, use response as-is but warn
+                    generated_modules.append(f"\n### scripts/{module_name}\n```python\n{module_code}\n```\n")
+                    print(f"  {module_name} generated ({len(module_code)} chars, no code block found)")
+
+        except Exception as e:
+            print(f"  Failed to generate {module_name}: {e}")
+            # Add placeholder to maintain structure
+            generated_modules.append(f"\n### scripts/{module_name}\n```python\n# Generation failed\npass\n```\n")
+
+    # Combine all modules
+    complete_code = "\n".join(generated_modules)
+
+    print("\nAll modules generated successfully!")
+    print(f"Total code length: {len(complete_code)} characters")
+
+    # Debug: Count how many file headers are in the combined code
+    import re
+    file_headers = re.findall(r'### scripts/([a-zA-Z0-9_]+\.py)', complete_code)
+    print(f"Debug: Found {len(file_headers)} file headers in combined code: {file_headers}")
+
+    return complete_code
+
+def generate_script_single_call(state: DevTeamState, llm) -> str:
+    """Fallback: Generate all code in a single LLM call (original approach)."""
+    print("Using single-call fallback generation...")
+
+    # Use the original two-phase prompt
+    tasks_text = "\n".join(f"- {task}" for task in state['backend_tasks'])
+    user_prompt = f"""Tasks to implement:
+    {tasks_text}
+
+    Architecture Context:
+    {state['architecture_notes']}
+
+    {state.get('user_prompt_template', 'Generate complete Python scripts for the tasks above.')}"""
+
+    response = llm.invoke([("user", user_prompt)])
+    return response.content
+
 
 # ============================================================================
 # NODE 3: BACKEND DEVELOPER
@@ -373,13 +582,24 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
     print(f"Tasks: {tasks_summary}\n")
 
     # For script/notebook, adjust approach (don't query FastAPI patterns)
+    # For script/notebook, use iterative module generation (divide-and-conquer)
     if project_type in ['script', 'notebook']:
-        print("(Skipping backend_brain query for script/notebook project)")
-        context = "Generating standalone Python scripts"
-    else:
-        # CRITICAL: Query backend_brain (NOT frontend_brain!)
-        print("Retrieving patterns from backend_brain...")
-        context = query_expert_brain(query=tasks_summary, collection_name="backend_brain", k=5)
+        print("(Using iterative module generation for script/notebook project)")
+
+        # Use the iterative approach for script projects
+        backend_code = generate_script_modules_iteratively(state)
+
+        # Return the generated code
+        return {
+            'backend_code': backend_code,
+            'backend_status': 'completed',
+            'backend_context': "Generated using iterative divide-and-conquer approach"
+        }
+
+    # For API/web apps, use the traditional approach
+    # CRITICAL: Query backend_brain (NOT frontend_brain!)
+    print("Retrieving patterns from backend_brain...")
+    context = query_expert_brain(query=tasks_summary, collection_name="backend_brain", k=5)
 
     if "No patterns found" in context or "Error accessing" in context:
         print("Backend brain not available")
@@ -435,41 +655,109 @@ def backend_developer(state: DevTeamState) -> DevTeamState:
         
     elif project_type == 'script':
         system_prompt = """You are a Python Automation Specialist.
-        Generate standalone Python scripts for automation, data fetching, and processing.
-        Focus on: requests library, JSON processing, file I/O, error handling."""
-        
-        user_prompt = f"""Tasks:
+        You use a DIVIDE AND CONQUER approach: first plan the modules, then implement each one completely.
+
+        CRITICAL TWO-PHASE PROCESS:
+        1. PHASE 1 - MODULE PLANNING: Analyze tasks and create a detailed module plan
+        2. PHASE 2 - CODE GENERATION: Generate complete code for EVERY module in the plan
+
+        RULES:
+        - Each module MUST have a single, clear responsibility
+        - If you import from a local module, that module MUST be in your plan and generated
+        - NEVER create imports for modules you don't generate
+        - Every module in the plan MUST be implemented (no skipping!)"""
+
+        user_prompt = f"""Tasks to implement:
         {chr(10).join(f"- {task}" for task in state['backend_tasks'])}
 
         Architecture Context:
         {state['architecture_notes']}
 
-        Generate production-ready Python scripts:
-        1. Fetch data from JSON endpoints using requests library
-        2. Process and transform data (handle nulls, inconsistent types)
-        3. Apply business rules and eligibility logic
-        4. Assign unique promo codes by tier and city
-        5. Handle errors and edge cases robustly
-        6. Send POST requests to webhooks
-        7. Use requests, json, pandas libraries
+        ========================================
+        PHASE 1: CREATE MODULE PLAN
+        ========================================
 
-        CRITICAL: You MUST provide COMPLETE, WORKING code for EVERY file.
+        First, ANALYZE the tasks above and determine what modules are needed.
 
-        Do NOT describe what the code should do - WRITE the actual code.
+        Think about:
+        - What are the distinct responsibilities? (e.g., data input, processing, output, configuration)
+        - What helper modules would make the code modular and maintainable?
+        - What's the main orchestration script?
 
-        Format each file as:
-        ### scripts/promo_code_assigner.py
+        Then create your plan in this EXACT format:
+
+        ## MODULE PLAN
+
+        **1. module_name_1.py**
+        - Responsibility: [What this module does]
+        - Key functions: [function1(), function2()]
+        - Dependencies: [libraries this module uses]
+
+        **2. module_name_2.py**
+        - Responsibility: [What this module does]
+        - Key functions: [function1(), function2()]
+        - Dependencies: [libraries this module uses]
+
+        **[N]. main.py**
+        - Responsibility: Orchestrate the entire workflow
+        - Key functions: main(), [other orchestration functions]
+        - Dependencies: [list all your helper modules above, plus argparse/CLI libraries]
+
+        CRITICAL: Base your plan on the ACTUAL tasks above, not generic examples.
+        Use module names that match the actual functionality needed.
+
+        ========================================
+        PHASE 2: GENERATE COMPLETE CODE
+        ========================================
+
+        Now generate COMPLETE, WORKING code for EVERY module in your plan above.
+
+        CRITICAL REQUIREMENTS:
+        1. Generate code for EVERY module you listed in the plan (no exceptions!)
+        2. Each module must be complete and runnable (no placeholders, no "pass", no "...")
+        3. Only import from modules that are in your plan
+        4. Use this exact format for each file:
+
+        ### scripts/module_name.py
         ```python
-        import requests
-        import json
-        import pandas as pd
-        from typing import Dict, List
+        # Complete implementation with ALL imports, ALL functions, ALL code
+        import library1
+        import library2
 
-        # ... COMPLETE implementation with ALL functions and code
-        # Include EVERYTHING needed to run the script
+        def function1(param1, param2):
+            # Full working implementation
+            result = actual_code_here
+            return result
+
+        def function2():
+            # Full working implementation
+            actual_code_here
+            return result
         ```
 
-        Provide FULL, COMPLETE implementations - not summaries or outlines."""
+        ### scripts/main.py
+        ```python
+        # Import from YOUR modules (from your plan)
+        from module_name import function1, function2
+        import argparse
+
+        def main():
+            # Full orchestration implementation
+            actual_code_here
+
+        if __name__ == "__main__":
+            main()
+        ```
+
+        VALIDATION CHECKLIST (before you finish):
+        ☐ Did I generate code for EVERY module in my plan?
+        ☐ Does each module have COMPLETE implementations (no placeholders)?
+        ☐ Do all imports reference modules that I actually generated?
+        ☐ Is main.py importing only from modules I created?
+        ☐ Does each file start with ### scripts/filename.py?
+        ☐ Did I base the implementation on the ACTUAL tasks, not generic examples?
+
+        Remember: DIVIDE AND CONQUER - Plan carefully based on ACTUAL tasks, then implement completely!"""
         
     else:
         # Default: API/Backend
@@ -558,7 +846,7 @@ def integration_reviewer(state: DevTeamState) -> DevTeamState:
     """
     Integration Reviewer validates that frontend and backend work together.
 
-    Checks:
+    - Import validation (missing modules)
     - API endpoint consistency
     - Data model alignment
     - Error handling compatibility
@@ -572,6 +860,34 @@ def integration_reviewer(state: DevTeamState) -> DevTeamState:
     if state['frontend_status'] != 'completed' or state['backend_status'] != 'completed':
         print("Waiting for frontend and backend to complete...")
         state['review_status'] = 'pending'
+        return state
+
+    # Check for import validation warnings (critical issues)
+    validation_warnings = state.get('validation_warnings', [])
+    if validation_warnings:
+        print("\nCRITICAL: Import validation failed!")
+        print(f"Found {len(validation_warnings)} missing module imports:")
+        for warning in validation_warnings:
+            print(f"  {warning}")
+
+        state['integration_review'] = f"""CRITICAL IMPORT VALIDATION FAILURE
+
+        The generated code has import statements for modules that were not created:
+
+        {chr(10).join(f"- {w}" for w in validation_warnings)}
+
+        This will cause ImportError when the code is executed.
+
+        CAUSE: The backend specialist generated imports for modules it didn't create as separate files.
+
+        REQUIRED FIX: Regenerate the code with proper module separation. Each import statement must have a corresponding generated file.
+
+        STATUS: FAIL - Code is not runnable."""
+
+        state['issues_found'] = validation_warnings
+        state['review_status'] = 'fail'
+
+        print("\nReview Status: FAIL (broken imports)")
         return state
 
     # Build review prompt
@@ -696,21 +1012,24 @@ def parse_tdd_node(state: DevTeamState) -> DevTeamState:
     for key, value in parsed_data.items():
         state[key] = value
 
-    # Detect project type from TDD or architect state
-    # Check TDD content for project type indicators
-    tdd_lower = state['tdd_content'].lower()
-    if 'python automation script' in tdd_lower or 'standalone script' in tdd_lower:
-        state['project_type'] = 'script'
-    elif 'jupyter notebook' in tdd_lower or 'data analysis notebook' in tdd_lower:
-        state['project_type'] = 'notebook'
-    elif 'library' in tdd_lower or 'package' in tdd_lower:
-        state['project_type'] = 'library'
-    elif 'api' in tdd_lower and 'frontend' not in tdd_lower:
-        state['project_type'] = 'api'
+    # Preserve project type from architect if already set, otherwise detect from TDD
+    if not state.get('project_type'):
+        # Only detect if not already set by architect
+        tdd_lower = state['tdd_content'].lower()
+        if 'python automation script' in tdd_lower or 'standalone script' in tdd_lower or 'cli' in tdd_lower:
+            state['project_type'] = 'script'
+        elif 'jupyter notebook' in tdd_lower or 'data analysis notebook' in tdd_lower:
+            state['project_type'] = 'notebook'
+        elif 'python library' in tdd_lower or 'python package' in tdd_lower or 'sdk' in tdd_lower:
+            state['project_type'] = 'library'
+        elif 'rest api' in tdd_lower or 'graphql' in tdd_lower and 'frontend' not in tdd_lower:
+            state['project_type'] = 'api'
+        else:
+            state['project_type'] = 'web_app'  # Default
+
+        print(f"Detected project type from TDD: {state.get('project_type', 'web_app')}")
     else:
-        state['project_type'] = 'web_app'  # Default
-    
-    print(f"Detected project type: {state.get('project_type', 'web_app')}")
+        print(f"Using project type from architect: {state.get('project_type', 'web_app')}")
 
     # Create a feature_request from TDD features for backward compatibility
     # But validate that features match project type
@@ -803,6 +1122,148 @@ def parse_tdd_node(state: DevTeamState) -> DevTeamState:
 
     return state
 
+def extract_module_plan(markdown_text: str) -> List[str]:
+    """
+    Extract the module plan from LLM-generated markdown.
+
+    Args:
+        markdown_text: The full LLM response
+
+    Returns:
+        List of module filenames mentioned in the plan
+    """
+    import re
+
+    planned_modules = []
+    # Try multiple patterns to find the module plan section
+    patterns = [
+        r'## MODULE PLAN(.+?)(?:##|========|$)',  # Standard markdown header
+        r'##\s*MODULE\s*PLAN(.+?)(?:##|========|$)',  # With extra spaces
+        r'MODULE PLAN:?(.+?)(?:##|========|$)',  # Without markdown header
+    ]
+
+    plan_section = None
+    for pattern in patterns:
+        match = re.search(pattern, markdown_text, re.DOTALL | re.IGNORECASE)
+        if match:
+            plan_section = match.group(1)
+            break
+
+    if not plan_section:
+        # No plan section found at all
+        return planned_modules
+
+    # Try multiple extraction patterns for module names
+    extraction_patterns = [
+        r'\*\*\d+\.\s+([a-zA-Z0-9_]+\.py)\*\*',  # **1. module.py**
+        r'^\d+\.\s+([a-zA-Z0-9_]+\.py)',  # 1. module.py
+        r'^\*\*([a-zA-Z0-9_]+\.py)\*\*',  # **module.py**
+        r'-\s+([a-zA-Z0-9_]+\.py)',  # - module.py
+        r'`([a-zA-Z0-9_]+\.py)`',  # `module.py`
+    ]
+
+    for pattern in extraction_patterns:
+        matches = re.findall(pattern, plan_section, re.MULTILINE)
+        if matches:
+            planned_modules.extend(matches)
+            # Remove duplicates while preserving order
+            seen = set()
+            planned_modules = [x for x in planned_modules if not (x in seen or seen.add(x))]
+            break
+
+    return planned_modules
+
+def validate_plan_execution(planned_modules: List[str], generated_files: Dict[str, str]) -> List[str]:
+    """
+    Validate that all planned modules were actually generated.
+
+    Args:
+        planned_modules: List of module filenames from the plan
+        generated_files: Dictionary of generated filepath -> code
+
+    Returns:
+        List of warning messages for missing modules
+    """
+    warnings = []
+
+    for module in planned_modules:
+        module_found = False
+
+        # Check if this module exists in generated files
+        for filepath in generated_files.keys():
+            if filepath.endswith(module) or f"/{module}" in filepath:
+                module_found = True
+                break
+
+        if not module_found:
+            warnings.append(f"⚠️  Module '{module}' was in the plan but was NOT generated")
+
+    return warnings
+
+def validate_imports_and_files(files: Dict[str, str]) -> List[str]:
+    """
+    Validate that all local imports have corresponding files.
+
+    Args:
+        files: Dictionary of filepath -> code content
+
+    Returns:
+        List of warning messages for missing imports
+    """
+    warnings = []
+    import re
+
+    for filepath, code in files.items():
+        # Extract local imports (from X import Y or import X)
+        from_imports = re.findall(r'from\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+import', code)
+        direct_imports = re.findall(r'^\s*import\s+([a-zA-Z_][a-zA-Z0-9_]*)', code, re.MULTILINE)
+
+        local_imports = set(from_imports + direct_imports)
+
+        # Filter out standard library and common third-party modules
+        stdlib_and_common = {
+            # Standard library
+            'os', 'sys', 're', 'json', 'datetime', 'time', 'math', 'random',
+            'collections', 'itertools', 'functools', 'typing', 'pathlib',
+            'io', 'csv', 'logging', 'argparse', 'subprocess', 'shutil',
+            'tempfile', 'threading', 'multiprocessing', 'asyncio', 'unittest',
+            # Web frameworks
+            'flask', 'fastapi', 'django', 'uvicorn', 'starlette', 'aiohttp',
+            # Data science
+            'pandas', 'numpy', 'matplotlib', 'seaborn', 'sklearn', 'scipy',
+            # Database
+            'sqlalchemy', 'pymongo', 'psycopg2', 'mysql',
+            # PDF/Document processing
+            'PyPDF2', 'pypdf', 'pdfplumber', 'pdfminer', 'reportlab',
+            # HTTP/Requests
+            'requests', 'urllib3', 'httpx', 'aiohttp',
+            # Testing
+            'pytest', 'unittest', 'mock', 'pytest_asyncio',
+            # Validation/Typing
+            'pydantic', 'pydantic_settings', 'marshmallow',
+            # AWS/Cloud
+            'boto3', 'botocore',
+            # Other common
+            'dotenv', 'python_dotenv', 'jinja2', 'click', 'typer'
+        }
+
+        local_imports = local_imports - stdlib_and_common
+
+        # Check if imported module exists as a file
+        for module in local_imports:
+            module_file_found = False
+
+            # Check for module_name.py in any of the generated files
+            for generated_file in files.keys():
+                if f"/{module}.py" in generated_file or generated_file.endswith(f"{module}.py"):
+                    module_file_found = True
+                    break
+
+            if not module_file_found:
+                warnings.append(f"{filepath} imports '{module}' but {module}.py was not generated")
+
+    return warnings
+
 def extract_code_node(state: DevTeamState) -> DevTeamState:
     """
     Extract code blocks from LLM-generated markdown into file dictionaries (Phase 2).
@@ -811,6 +1272,7 @@ def extract_code_node(state: DevTeamState) -> DevTeamState:
     - Code blocks by language
     - File path markers
     - Organizing into proper file structure
+    - Validates that imported modules have corresponding files
     """
     print("\n" + "=" * 70)
     print("CODE EXTRACTOR: Organizing Code into Files")
@@ -874,6 +1336,56 @@ def extract_code_node(state: DevTeamState) -> DevTeamState:
 
     total_files = len(state.get('frontend_files', {})) + len(state.get('backend_files', {}))
     print(f"\nTotal code files extracted: {total_files}")
+
+    # Validate plan execution for script projects (check if all planned modules were generated)
+    project_type = state.get('project_type', 'web_app')
+    if project_type == 'script' and state.get('backend_code'):
+        print("\nValidating module plan execution...")
+        planned_modules = extract_module_plan(state['backend_code'])
+
+        if planned_modules:
+            print(f"Found plan with {len(planned_modules)} modules: {', '.join(planned_modules)}")
+
+            plan_warnings = validate_plan_execution(planned_modules, state.get('backend_files', {}))
+            if plan_warnings:
+                print(f"\n{'=' * 70}")
+                print(" PLAN EXECUTION WARNINGS")
+                print(f"{'=' * 70}")
+                for warning in plan_warnings:
+                    print(f"  {warning}")
+                print("\nThe LLM planned to create these modules but didn't generate them.")
+                print("This indicates incomplete implementation.")
+                print(f"{'=' * 70}\n")
+
+                # Add to validation warnings
+                existing_warnings = state.get('validation_warnings', [])
+                state['validation_warnings'] = existing_warnings + plan_warnings
+        else:
+            print("  No module plan found in backend code (LLM may not have followed the template)")
+
+    # Validate imports for backend files (most critical for script projects)
+    if state.get('backend_files'):
+        print("\nValidating backend imports...")
+        backend_warnings = validate_imports_and_files(state['backend_files'])
+        if backend_warnings:
+            print(f"\n{'=' * 70}")
+            print("  IMPORT VALIDATION WARNINGS")
+            print(f"{'=' * 70}")
+            for warning in backend_warnings:
+                print(f"  {warning}")
+            print("\nThese files have import statements for modules that were not generated.")
+            print("This will cause ImportError when the code is run.")
+            print(f"{'=' * 70}\n")
+
+            # Store warnings in state for later review
+            state['validation_warnings'] = backend_warnings
+
+    # Validate imports for frontend files
+    if state.get('frontend_files'):
+        frontend_warnings = validate_imports_and_files(state['frontend_files'])
+        if frontend_warnings:
+            existing_warnings = state.get('validation_warnings', [])
+            state['validation_warnings'] = existing_warnings + frontend_warnings
 
     return state
 

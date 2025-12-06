@@ -31,32 +31,32 @@ def extract_code_blocks(markdown_text: str) -> List[Tuple[str, str, str]]:
     # Group 3: code content
     pattern = r'```(\w+)(?:\s+([^\n]+?))?\n(.*?)```'
 
-    matches = re.findall(pattern, markdown_text, re.DOTALL)
-
-    for language, file_path, code in matches:
-        file_path = file_path.strip() if file_path else ""
-        code = code.strip()
+    # Use finditer instead of findall to preserve match positions
+    for match in re.finditer(pattern, markdown_text, re.DOTALL):
+        language = match.group(1)
+        file_path = match.group(2).strip() if match.group(2) else ""
+        code = match.group(3).strip()
 
         # Validate file_path - it must look like a valid file path
         if file_path:
             # Remove quotes if present (e.g., 'file.tsx', "file.py")
             file_path = file_path.strip("'\"`")
-            
+
             # Skip if file_path looks like code directives or keywords
             code_directives = [
                 'use client', 'use server', 'use strict', 'use module',
                 'import', 'export', 'function', 'const', 'let', 'var',
                 'from', 'require', 'return', 'class', 'interface', 'type'
             ]
-            
+
             # Check if it's a code directive (case-insensitive)
             if file_path.lower() in [d.lower() for d in code_directives]:
                 file_path = ""
-            
+
             # Skip if it contains code-like patterns
             if file_path and any(char in file_path for char in ['(', ')', '{', '}', '=', ':', ';']):
                 file_path = ""
-            
+
             # Skip if it doesn't look like a file path (missing extension or has invalid chars)
             if file_path:
                 # Must have a file extension (contain a dot followed by letters/numbers)
@@ -74,8 +74,8 @@ def extract_code_blocks(markdown_text: str) -> List[Tuple[str, str, str]]:
 
         # If no valid file path, check for markdown header before code block
         if not file_path:
-            # Look backwards from this match to find a header
-            match_start = markdown_text.find(f'```{language}')
+            # Look backwards from THIS match's actual position (not the first occurrence)
+            match_start = match.start()
             if match_start > 0:
                 # Get 200 chars before the code block
                 before_block = markdown_text[max(0, match_start - 200):match_start]

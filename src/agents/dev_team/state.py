@@ -66,6 +66,7 @@ class DevTeamState(TypedDict):
     # ========== CODE VALIDATION (PHASE 2) ==========
     validation_results: Optional[Dict[str, bool]]  # filepath -> is_valid
     validation_errors: Optional[Dict[str, List[str]]]  # filepath -> error messages
+    validation_warnings: Optional[List[str]]  # Import validation warnings
 
     # ========== OUTPUT METADATA (PHASE 2) ==========
     output_directory: Optional[str]  # Where to write files
