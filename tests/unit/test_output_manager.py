@@ -211,12 +211,16 @@ class TestStructuredOutput:
             include_tests=True
         )
         
-        # Check test directories
+        # Check test directories (only backend tests are created)
         backend_tests = project_dir / "backend" / "tests"
-        frontend_tests = project_dir / "frontend" / "tests"
+        backend_test_file = project_dir / "backend" / "tests" / "test_api.py"
         
         assert backend_tests.exists()
-        assert frontend_tests.exists()
+        assert backend_test_file.exists()
+        
+        # Frontend tests are not created by default
+        frontend_tests = project_dir / "frontend" / "tests"
+        assert not frontend_tests.exists()
 
     def test_no_tests_structure(self, temp_output_dir, sample_state):
         """Test that test directories are not created when disabled."""
