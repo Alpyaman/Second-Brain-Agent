@@ -13,7 +13,7 @@ import traceback
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.agents.chief_of_staff.graph import create_agent_graph
+from src.agents.chief_of_staff.graph import create_agent_graph  # noqa: E402
 
 def main():
     """Run the Chief of Staff agent."""

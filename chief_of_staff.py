@@ -21,7 +21,7 @@ The Chief of Staff will:
 import os
 import sys
 import argparse
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 from src.agents.chief_of_staff.graph import create_agent_graph
 from dotenv import load_dotenv
 import traceback

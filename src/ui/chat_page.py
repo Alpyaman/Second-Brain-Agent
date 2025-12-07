@@ -294,7 +294,7 @@ def render_knowledge_sources():
             
             for note in recent_notes:
                 with st.expander(f"📄 {note.name}"):
-                    content = note.read_text()
+                    content = note.read_text(encoding='utf-8')
                     st.markdown(content[:300] + "..." if len(content) > 300 else content)
                     
                     st.caption(f"Last modified: {datetime.fromtimestamp(note.stat().st_mtime).strftime('%Y-%m-%d %H:%M')}")

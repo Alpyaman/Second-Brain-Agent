@@ -21,17 +21,17 @@ project_root = Path(__file__).parent.parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from src.agents.chief_of_staff.state import AgentState
-from src.tools.google_calendar import get_todays_event
-from src.tools.gmail import create_draft_email
-from src.core.brain import query_second_brain
-from src.tools.agent_triggers import (
+from src.agents.chief_of_staff.state import AgentState  # noqa: E402
+from src.tools.google_calendar import get_todays_event  # noqa: E402
+from src.tools.gmail import create_draft_email  # noqa: E402
+from src.core.brain import query_second_brain  # noqa: E402
+from src.tools.agent_triggers import (  # noqa: E402
     detect_calendar_triggers,
     queue_trigger,
-    execute_trigger,
-    TriggerContext
+    execute_trigger,  # noqa: F401
+    TriggerContext  # noqa: F401
 )
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv()
 

@@ -20,7 +20,7 @@ from pathlib import Path
 # Cost per 1M tokens (input, output) in USD
 PROVIDER_COSTS = {
     "google": {
-        "gemini-2.0-flash-lite": (0.05, 0.15),
+        "gemini-2.5-flash-lite": (0.05, 0.15),
         "gemini-2.5-flash-lite": (0.05, 0.15),
         "gemini-2.0-flash-thinking-exp": (0.10, 0.30),
     },
@@ -132,7 +132,7 @@ class CostEstimator:
 
         # Dev Team - TDD Parsing (4 parallel calls)
         parsing_provider = config.get("parsing", "google")
-        parsing_model = config.get("parsing_model", "gemini-2.0-flash-lite")
+        parsing_model = config.get("parsing_model", "gemini-2.5-flash-lite")
         costs["tdd_parsing"] = self.estimate_task_cost(
             parsing_provider, parsing_model, "parsing"
         ) * 4  # 4 parallel extractions

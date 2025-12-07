@@ -11,7 +11,7 @@ Example:
     → Template is ready before the meeting starts
 """
 
-import asyncio
+import asyncio  # noqa: F401
 import json
 from datetime import datetime
 from pathlib import Path

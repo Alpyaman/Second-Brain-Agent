@@ -73,7 +73,7 @@ def render_devteam_page(config: dict):
                 )
                 
                 if selected_tdd:
-                    tdd_content = selected_tdd.read_text()
+                    tdd_content = selected_tdd.read_text(encoding='utf-8')
                     tdd_source = selected_tdd.name
                     st.success(f"Loaded: {selected_tdd.name}")
             else:
@@ -180,7 +180,7 @@ def render_devteam_page(config: dict):
                     progress_bar.progress(10)
                     
                     # Save TDD to temporary file
-                    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
                         f.write(tdd_content)
                         tdd_file_path = f.name
                     
@@ -190,14 +190,9 @@ def render_devteam_page(config: dict):
                         
                         # Run dev team
                         result = run_dev_team_v2(
-                            tdd_file=tdd_file_path,
-                            output_dir=str(output_path),
+                            tdd_content=tdd_content,
                             implementation_phase=implementation_phase,
-                            include_docker=include_docker,
-                            include_tests=include_tests,
-                            execution_enabled=execution_enabled,
-                            self_healing_enabled=self_healing_enabled,
-                            max_fix_attempts=max_fix_attempts
+                            output_directory=str(output_path)
                         )
                         
                         status_text.text("💻 Generating code...")
@@ -310,7 +305,7 @@ def render_file_browser(output_dir: str):
                 with col1:
                     if st.button(f"📄 {rel_path}", key=f"view_{rel_path}"):
                         # Show file content
-                        content = file.read_text()
+                        content = file.read_text(encoding='utf-8')
                         st.code(content, language=file.suffix[1:] if file.suffix else 'text')
                 
                 with col2:
@@ -397,7 +392,7 @@ def render_project_stats(output_dir: str):
             # Count lines for text files
             if ext in ['.py', '.js', '.ts', '.tsx', '.jsx', '.md', '.txt', '.yml', '.yaml', '.json']:
                 try:
-                    lines = len(file.read_text().splitlines())
+                    lines = len(file.read_text(encoding='utf-8').splitlines())
                     total_lines += lines
                 except Exception as e:
                     st.warning(f"Could not read {file}: {e}")

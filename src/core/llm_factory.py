@@ -49,8 +49,8 @@ TaskType = Literal[
 # Model configurations by provider and task type
 MODEL_CONFIGS = {
     "google": {
-        "parsing": {"model": "gemini-2.0-flash-lite", "temperature": 0.2},
-        "reasoning": {"model": "gemini-2.0-flash-lite", "temperature": 0.4},
+        "parsing": {"model": "gemini-2.5-flash-lite", "temperature": 0.2},
+        "reasoning": {"model": "gemini-2.5-flash-lite", "temperature": 0.4},
         "coding": {"model": "gemini-2.5-flash-lite", "temperature": 0.3},
         "review": {"model": "gemini-2.5-flash-lite", "temperature": 0.2},
         "creative": {"model": "gemini-2.5-flash-lite", "temperature": 0.7},
@@ -82,11 +82,11 @@ MODEL_CONFIGS = {
 BUDGET_MODEL_CONFIGS = {
     "google": {
         # Use same models but with Gemini free tier
-        "parsing": {"model": "gemini-2.0-flash-lite", "temperature": 0.2},
-        "reasoning": {"model": "gemini-2.0-flash-lite", "temperature": 0.4},  # Cheaper than thinking model
-        "coding": {"model": "gemini-2.0-flash-lite", "temperature": 0.3},
-        "review": {"model": "gemini-2.0-flash-lite", "temperature": 0.2},
-        "creative": {"model": "gemini-2.0-flash-lite", "temperature": 0.7},
+        "parsing": {"model": "gemini-2.5-flash-lite", "temperature": 0.2},
+        "reasoning": {"model": "gemini-2.5-flash-lite", "temperature": 0.4},  # Cheaper than thinking model
+        "coding": {"model": "gemini-2.5-flash-lite", "temperature": 0.3},
+        "review": {"model": "gemini-2.5-flash-lite", "temperature": 0.2},
+        "creative": {"model": "gemini-2.5-flash-lite", "temperature": 0.7},
     },
     "ollama": {
         # Use smallest viable models

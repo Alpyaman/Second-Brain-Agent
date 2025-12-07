@@ -17,8 +17,8 @@ from src.tools.agent_triggers import (
     TriggerReason,
     detect_calendar_triggers,
     queue_trigger,
-    get_queued_triggers,
-    execute_trigger,
+    get_queued_triggers,  # noqa: F401
+    execute_trigger,  # noqa: F401
     get_trigger_system
 )
 

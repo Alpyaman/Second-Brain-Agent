@@ -13,7 +13,7 @@ from src.tools.agent_triggers import (
     detect_calendar_triggers,
     queue_trigger,
     get_queued_triggers,
-    execute_trigger,
+    execute_trigger,  # noqa: F401
     AgentType
 )
 
@@ -277,7 +277,7 @@ def demo_real_world_scenario():
 def main():
     """Run the complete demo."""
     # Phase 1: Detect triggers from calendar
-    all_triggers = demo_trigger_detection()
+    all_triggers = demo_trigger_detection()  # noqa: F841
     
     # Phase 2: Show queue management
     demo_trigger_queue()

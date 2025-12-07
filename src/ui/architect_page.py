@@ -67,7 +67,7 @@ and implement JWT authentication."""
                 )
                 
                 if selected_example:
-                    job_description = selected_example.read_text()
+                    job_description = selected_example.read_text(encoding='utf-8')
                     st.info(f"Loaded example: {selected_example.name}")
             else:
                 st.warning("No example files found in examples/ directory")
@@ -138,17 +138,24 @@ and implement JWT authentication."""
                     
                     # Run architect session
                     result = run_architect_session(
-                        job_description=job_description,
-                        interactive=interactive_mode,
-                        output_file=str(output_file)
+                        goal=job_description,
+                        is_job_description=True,
+                        feedback=None
                     )
                     
                     status_text.text("Generating TDD...")
                     progress_bar.progress(60)
                     
+                    # Get the design document from result
+                    tdd = result.get('design_document', '')
+                    
+                    # Save to file
+                    if tdd:
+                        output_file.write_text(tdd, encoding='utf-8')
+                    
                     # Read generated TDD
                     if output_file.exists():
-                        tdd_content = output_file.read_text()
+                        tdd_content = output_file.read_text(encoding='utf-8')
                         st.session_state.generated_tdd = {
                             'content': tdd_content,
                             'project_name': project_name,
@@ -218,7 +225,7 @@ and implement JWT authentication."""
                     docs_dir.mkdir(exist_ok=True)
                     
                     output_path = docs_dir / f"{tdd_data['project_name']}_tdd.md"
-                    output_path.write_text(tdd_data['content'])
+                    output_path.write_text(tdd_data['content'], encoding='utf-8')
                     
                     st.success(f"✅ Saved to {output_path}")
             
