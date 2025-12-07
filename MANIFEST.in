@@ -1,0 +1,51 @@
+# Include documentation and configuration
+include README.md
+include LICENSE
+include requirements.txt
+include requirements-dev.txt
+include pyproject.toml
+include setup.py
+
+# Include source code
+recursive-include src *.py
+
+# Include documentation
+recursive-include docs *.md *.rst
+
+# Exclude binary and generated files
+exclude token.json
+exclude credentials.json
+exclude *.db
+exclude *.sqlite
+exclude *.sqlite3
+
+# Exclude data directories
+recursive-exclude data *
+
+# Exclude test directories
+recursive-exclude tests *
+
+# Exclude build artifacts
+recursive-exclude dist *
+recursive-exclude build *
+recursive-exclude *.egg-info *
+
+# Exclude virtual environments
+recursive-exclude venv *
+recursive-exclude .venv *
+recursive-exclude env *
+
+# Exclude cache directories
+recursive-exclude __pycache__ *
+recursive-exclude .pytest_cache *
+recursive-exclude .mypy_cache *
+recursive-exclude htmlcov *
+
+# Exclude IDE and version control
+recursive-exclude .git *
+recursive-exclude .github *
+recursive-exclude .vscode *
+recursive-exclude .idea *
+
+# Exclude output directory
+recursive-exclude output *
