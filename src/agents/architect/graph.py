@@ -50,14 +50,19 @@ def detect_project_type(goal: str, required_features: Optional[List[str]] = None
     
     # Keywords for each project type
     script_keywords = ['script', 'automation', 'fetch', 'process', 'analyze data', 'csv', 
-                      'json endpoint', 'webhook', 'single-use', 'automate']
+                      'json endpoint', 'webhook', 'single-use', 'automate', 'cron job']
     notebook_keywords = ['jupyter', 'notebook', 'analysis', 'data analysis', 'csv analysis',
                         'compute', 'analyze', 'metrics', 'recommendations', 'insights']
     library_keywords = ['library', 'package', 'module', 'pip install', 'import', 'sdk']
     api_keywords = ['api', 'rest api', 'api endpoint', 'microservice', 'backend api', 
                    'service', 'endpoints']
     web_app_keywords = ['web app', 'website', 'frontend', 'user interface', 'ui', 
-                       'login', 'registration', 'dashboard', 'admin panel', 'client-side']
+                       'login', 'registration', 'dashboard', 'admin panel', 'client-side',
+                       'react', 'vue', 'angular', 'fastapi', 'django', 'flask',
+                       'web application', 'web-based', 'browser', 'responsive',
+                       'spa', 'single page application', 'full-stack', 'fullstack',
+                       'microservices', 'message queue', 'kafka', 'rabbitmq',
+                       'real-time', 'websocket', 'notification system', 'alert system']
     
     # Score each type
     scores = {
@@ -73,10 +78,23 @@ def detect_project_type(goal: str, required_features: Optional[List[str]] = None
     if max_score == 0:
         return 'unknown'
     
-    # If script and notebook both have high scores, prefer notebook for analysis
+    # Priority rules for disambiguation:
+    # 1. If mentions frontend frameworks (React/Vue/Angular) or FastAPI/Django -> web_app
+    frontend_frameworks = ['react', 'vue', 'angular', 'svelte', 'next.js', 'nuxt']
+    backend_frameworks = ['fastapi', 'django', 'flask', 'express']
+    has_frontend = any(fw in combined for fw in frontend_frameworks)
+    has_backend_framework = any(fw in combined for fw in backend_frameworks)
+    has_dashboard = 'dashboard' in combined
+    has_microservices = 'microservice' in combined or 'message queue' in combined
+    
+    if (has_frontend or (has_backend_framework and has_dashboard) or has_microservices) and scores['web_app'] > 0:
+        return 'web_app'
+    
+    # 2. If script and notebook both have high scores, prefer notebook for analysis
     if scores['notebook'] >= 2 and scores['script'] >= 2:
         return 'notebook'
     
+    # 3. Return highest scoring type
     for project_type, score in scores.items():
         if score == max_score:
             return project_type  # type: ignore
