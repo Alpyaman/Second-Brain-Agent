@@ -163,10 +163,10 @@ class TestStructuredOutput:
         
         docs_dir = project_dir / "docs"
         assert docs_dir.exists()
-        assert (docs_dir / "design.md").exists()
+        assert (docs_dir / "DESIGN.md").exists()
         
         # Verify content
-        content = (docs_dir / "design.md").read_text()
+        content = (docs_dir / "DESIGN.md").read_text()
         assert "Design Document" in content
 
     def test_docker_configuration(self, temp_output_dir, sample_state):
