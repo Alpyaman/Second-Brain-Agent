@@ -1,0 +1,128 @@
+[
+  {
+    "trigger_reason": "calendar_event",
+    "source_agent": "chief_of_staff",
+    "target_agent": "architect",
+    "event_details": {
+      "event_title": "E-commerce Platform - Project Kickoff",
+      "event_description": "Initial planning session for new online store. Discuss features, architecture, timeline.",
+      "event_start": null,
+      "attendees": null,
+      "action": "generate_project_template",
+      "suggestion": "Generate project template for: E-commerce Platform - Project Kickoff"
+    },
+    "trigger_time": "2025-12-07T15:36:51.585547",
+    "priority": "high",
+    "auto_execute": false
+  },
+  {
+    "trigger_reason": "calendar_event",
+    "source_agent": "chief_of_staff",
+    "target_agent": "architect",
+    "event_details": {
+      "event_title": "Sprint 23 Planning Meeting",
+      "event_description": "Plan next two weeks of development work",
+      "event_start": null,
+      "attendees": null,
+      "action": "generate_project_template",
+      "suggestion": "Generate project template for: Sprint 23 Planning Meeting"
+    },
+    "trigger_time": "2025-12-07T15:36:51.591697",
+    "priority": "high",
+    "auto_execute": false
+  },
+  {
+    "trigger_reason": "calendar_event",
+    "source_agent": "chief_of_staff",
+    "target_agent": "curator",
+    "event_details": {
+      "event_title": "Research: React Server Components",
+      "event_description": "Learn about RSC architecture and best practices",
+      "event_start": null,
+      "action": "discover_resources",
+      "suggestion": "Find and ingest resources related to: Research: React Server Components"
+    },
+    "trigger_time": "2025-12-07T15:36:51.597386",
+    "priority": "low",
+    "auto_execute": true
+  },
+  {
+    "trigger_reason": "calendar_event",
+    "source_agent": "chief_of_staff",
+    "target_agent": "chief_of_staff",
+    "event_details": {
+      "event_title": "Client Demo - Progress Review",
+      "event_description": "Show current features to stakeholder, gather feedback",
+      "event_start": null,
+      "attendees": null,
+      "action": "prepare_meeting_brief",
+      "suggestion": "Compile relevant notes and prepare talking points"
+    },
+    "trigger_time": "2025-12-07T15:36:51.618898",
+    "priority": "high",
+    "auto_execute": true
+  },
+  {
+    "trigger_reason": "calendar_event",
+    "source_agent": "chief_of_staff",
+    "target_agent": "architect",
+    "event_details": {
+      "event_title": "E-commerce Platform - Project Kickoff",
+      "event_description": "Initial planning session for new online store. Discuss features, architecture, timeline.",
+      "event_start": null,
+      "attendees": null,
+      "action": "generate_project_template",
+      "suggestion": "Generate project template for: E-commerce Platform - Project Kickoff"
+    },
+    "trigger_time": "2025-12-07T15:41:03.978913",
+    "priority": "high",
+    "auto_execute": false
+  },
+  {
+    "trigger_reason": "calendar_event",
+    "source_agent": "chief_of_staff",
+    "target_agent": "architect",
+    "event_details": {
+      "event_title": "Sprint 23 Planning Meeting",
+      "event_description": "Plan next two weeks of development work",
+      "event_start": null,
+      "attendees": null,
+      "action": "generate_project_template",
+      "suggestion": "Generate project template for: Sprint 23 Planning Meeting"
+    },
+    "trigger_time": "2025-12-07T15:41:03.982893",
+    "priority": "high",
+    "auto_execute": false
+  },
+  {
+    "trigger_reason": "calendar_event",
+    "source_agent": "chief_of_staff",
+    "target_agent": "curator",
+    "event_details": {
+      "event_title": "Research: React Server Components",
+      "event_description": "Learn about RSC architecture and best practices",
+      "event_start": null,
+      "action": "discover_resources",
+      "suggestion": "Find and ingest resources related to: Research: React Server Components"
+    },
+    "trigger_time": "2025-12-07T15:41:03.987235",
+    "priority": "low",
+    "auto_execute": true
+  },
+  {
+    "trigger_reason": "calendar_event",
+    "source_agent": "chief_of_staff",
+    "target_agent": "chief_of_staff",
+    "event_details": {
+      "event_title": "Client Demo - Progress Review",
+      "event_description": "Show current features to stakeholder, gather feedback",
+      "event_start": null,
+      "attendees": null,
+      "action": "prepare_meeting_brief",
+      "suggestion": "Compile relevant notes and prepare talking points"
+    },
+    "trigger_time": "2025-12-07T15:41:04.002036",
+    "priority": "high",
+    "auto_execute": true
+  }
+]

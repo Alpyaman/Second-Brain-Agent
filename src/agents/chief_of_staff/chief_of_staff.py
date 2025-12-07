@@ -7,12 +7,13 @@ awareness with knowledge base context to provide intelligent daily briefings.
 
 import sys
 from pathlib import Path
-from src.agents.chief_of_staff.graph import create_agent_graph
 import traceback
 
 # Add src to path for imports
-src_path = Path(__file__).parent / "src"
-sys.path.insert(0, str(src_path))
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from src.agents.chief_of_staff.graph import create_agent_graph
 
 def main():
     """Run the Chief of Staff agent."""
@@ -42,6 +43,7 @@ def main():
         "calendar_events": "",
         "relevant_notes": "",
         "daily_plan": "",
+        "triggered_actions": [],
         "messages": []
     }
 

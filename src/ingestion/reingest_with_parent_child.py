@@ -36,7 +36,7 @@ from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-from ingestion.parent_child_ingestion import process_code_files_with_parent_child, ingest_with_parent_child
+from src.ingestion.parent_child_ingestion import process_code_files_with_parent_child, ingest_with_parent_child
 
 load_dotenv()
 

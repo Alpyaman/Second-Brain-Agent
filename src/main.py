@@ -36,26 +36,26 @@ import argparse
 import traceback
 from pathlib import Path
 from dotenv import load_dotenv
-from core.config import CHROMA_DB_DIR, EMBEDDING_MODEL
+from src.core.config import CHROMA_DB_DIR, EMBEDDING_MODEL
 
 load_dotenv()
 
 # Import agent-specific modules (lazy loading to improve startup time)
 def import_chief_of_staff():
-    from agents.chief_of_staff.graph import create_agent_graph
-    from tools.gmail import list_drafts
+    from src.agents.chief_of_staff.graph import create_agent_graph
+    from src.tools.gmail import list_drafts
     return create_agent_graph, list_drafts
 
 def import_dev_team():
-    from agents.dev_team.graph import run_dev_team
+    from src.agents.dev_team.graph import run_dev_team
     return run_dev_team
 
 def import_architect():
-    from agents.architect.graph import run_architect_session
+    from src.agents.architect.graph import run_architect_session
     return run_architect_session
 
 def import_curator():
-    from agents.curator.graph import run_curator_agent
+    from src.agents.curator.graph import run_curator_agent
     return run_curator_agent
 
 
@@ -81,8 +81,8 @@ def query_brain(collection_name: str, query: str, k: int = 5) -> str:
     from langchain_chroma import Chroma
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.output_parsers import StrOutputParser
-    from tools.memory import get_relevant_preferences
-    from ingestion.parent_child_ingestion import retrieve_with_parent_lookup
+    from src.tools.memory import get_relevant_preferences
+    from src.ingestion.parent_child_ingestion import retrieve_with_parent_lookup
 
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "codellama")

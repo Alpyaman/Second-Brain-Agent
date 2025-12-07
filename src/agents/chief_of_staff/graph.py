@@ -7,6 +7,8 @@ It orchestrates calendar checkingü knowledge base queries, and briefing generat
 
 import os
 import re
+import sys
+from pathlib import Path
 from typing import Any, Dict
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -14,10 +16,21 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import StateGraph, END
 
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from src.agents.chief_of_staff.state import AgentState
-from tools.google_calendar import get_todays_event
-from tools.gmail import create_draft_email
+from src.tools.google_calendar import get_todays_event
+from src.tools.gmail import create_draft_email
 from src.core.brain import query_second_brain
+from src.tools.agent_triggers import (
+    detect_calendar_triggers,
+    queue_trigger,
+    execute_trigger,
+    TriggerContext
+)
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -43,6 +56,72 @@ def check_schedule(state: AgentState) -> Dict[str, Any]:
     print(f"Calendar events retrieved:\n{calendar_events}\n")
 
     return {"calendar_events": calendar_events}
+
+
+def detect_triggers(state: AgentState) -> Dict[str, Any]:
+    """
+    Node 1.5: Detect cross-agent triggers from calendar events.
+
+    Analyzes calendar events to identify patterns that should trigger
+    other agents (e.g., "Project Kickoff" → trigger Architect).
+
+    Args:
+        state: Current agent state with calendar_events
+
+    Returns:
+        Updated state with triggered_actions
+    """
+    print("[Node: detect_triggers] Analyzing calendar for cross-agent triggers...")
+
+    calendar_events = state.get("calendar_events", "")
+    triggered_actions = []
+
+    if not calendar_events or "No events" in calendar_events:
+        print("No events to analyze for triggers.")
+        return {"triggered_actions": triggered_actions}
+
+    # Parse calendar events to extract individual events
+    # Format: "📅 HH:MM AM/PM - Event Title • Location"
+    import re
+    event_pattern = r'📅\s*([^-]+)\s*-\s*([^•\n]+)(?:•\s*(.+))?'
+    matches = re.findall(event_pattern, calendar_events)
+
+    for time, title, location in matches:
+        title = title.strip()
+        location = location.strip() if location else ""
+
+        print(f"  Analyzing event: {title}")
+
+        # Detect triggers for this event
+        triggers = detect_calendar_triggers(
+            event_title=title,
+            event_description=location,
+            event_start=None,  # Could parse from time if needed
+            attendees=None
+        )
+
+        if triggers:
+            print(f"    → Detected {len(triggers)} trigger(s)")
+            for trigger in triggers:
+                # Queue the trigger
+                queue_trigger(trigger)
+                
+                # Add to state for reporting in briefing
+                triggered_actions.append({
+                    'event_title': title,
+                    'target_agent': trigger.target_agent.value,
+                    'action': trigger.event_details.get('action'),
+                    'suggestion': trigger.event_details.get('suggestion'),
+                    'priority': trigger.priority,
+                    'auto_execute': trigger.auto_execute
+                })
+
+    if triggered_actions:
+        print(f"\n[Triggers] Detected {len(triggered_actions)} cross-agent trigger(s)")
+    else:
+        print("No triggers detected.")
+
+    return {"triggered_actions": triggered_actions}
 
 def consult_brain(state: AgentState) -> Dict[str, Any]:
     """
@@ -217,6 +296,46 @@ def remove_email_markers(text: str) -> str:
     cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
     return cleaned.strip()
 
+def execute_auto_triggers(state: AgentState) -> Dict[str, Any]:
+    """
+    Node 2.5: Execute auto-triggered actions.
+
+    For triggers marked with auto_execute=True, immediately execute them.
+    Others are queued for user approval.
+
+    Args:
+        state: Current agent state with triggered_actions
+
+    Returns:
+        Updated state (triggers execute in background)
+    """
+    print("[Node: execute_auto_triggers] Processing triggered actions...")
+
+    triggered_actions = state.get("triggered_actions", [])
+
+    if not triggered_actions:
+        print("No triggers to execute.")
+        return {}
+
+    # Separate auto-execute from manual approval
+    auto_triggers = [t for t in triggered_actions if t.get('auto_execute', False)]
+    manual_triggers = [t for t in triggered_actions if not t.get('auto_execute', False)]
+
+    if auto_triggers:
+        print(f"\n[Auto-Execute] Running {len(auto_triggers)} automatic trigger(s)...")
+        # Note: In production, these would run asynchronously
+        # For now, we just log them
+        for trigger in auto_triggers:
+            print(f"  → {trigger['target_agent']}: {trigger['action']}")
+
+    if manual_triggers:
+        print(f"\n[Queued] {len(manual_triggers)} trigger(s) queued for approval")
+        for trigger in manual_triggers:
+            print(f"  → {trigger['target_agent']}: {trigger['action']} (priority: {trigger['priority']})")
+
+    return {}
+
+
 def draft_briefing(state: AgentState) -> Dict[str, Any]:
     """
     Node 3: Draft a morning briefing using Gemini.
@@ -235,6 +354,7 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
     calendar_events = state.get("calendar_events", "No events scheduled")
     relevant_notes = state.get("relevant_notes", "No relevant context found")
     user_query = state.get("user_query", "Give me my daily briefing")
+    triggered_actions = state.get("triggered_actions", [])
 
     # Create the briefing prompt
     prompt_template = ChatPromptTemplate.from_messages([
@@ -272,18 +392,31 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
         RELEVANT CONTEXT FROM MY NOTES:
         {relevant_notes}
 
+        TRIGGERED ACTIONS:
+        {triggered_actions_text}
+
         Create a structured morning briefing that:
         1. Summarizes today's schedule
         2. Provides relevant context from my notes for each event
         3. Suggests priorities or preparation items
         4. Highlights any important connections or insights
-        5. If you notice I should send any emails (follow-ups, meeting prep, confirmations, etc.), suggest draft emails using the special format
+        5. If TRIGGERED ACTIONS are present, mention them in a dedicated section explaining what will be automatically prepared
+        6. If you notice I should send any emails (follow-ups, meeting prep, confirmations, etc.), suggest draft emails using the special format
 
         Format the briefing clearly with headers and bullet points.""")
     ])
 
     # Initialize Gemini
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.7)
+
+    # Format triggered actions for prompt
+    if triggered_actions:
+        triggered_text = "\n".join([
+            f"- {t['event_title']}: {t['suggestion']} [Agent: {t['target_agent']}, Priority: {t['priority']}, Auto: {t['auto_execute']}]"
+            for t in triggered_actions
+        ])
+    else:
+        triggered_text = "No automatic actions triggered."
 
     # Create chain
     chain = prompt_template | llm | StrOutputParser()
@@ -293,7 +426,8 @@ def draft_briefing(state: AgentState) -> Dict[str, Any]:
         daily_plan = chain.invoke({
             "user_query": user_query,
             "calendar_events": calendar_events,
-            "relevant_notes": relevant_notes
+            "relevant_notes": relevant_notes,
+            "triggered_actions_text": triggered_text
         })
 
         print("Morning briefing generated")
@@ -331,13 +465,17 @@ def create_agent_graph() -> StateGraph:
 
     # Add nodes
     workflow.add_node("check_schedule", check_schedule)
+    workflow.add_node("detect_triggers", detect_triggers)
     workflow.add_node("consult_brain", consult_brain)
+    workflow.add_node("execute_auto_triggers", execute_auto_triggers)
     workflow.add_node("draft_briefing", draft_briefing)
 
     # Define the workflow edges (sequential execution)
     workflow.set_entry_point("check_schedule")
-    workflow.add_edge("check_schedule", "consult_brain")
-    workflow.add_edge("consult_brain", "draft_briefing")
+    workflow.add_edge("check_schedule", "detect_triggers")
+    workflow.add_edge("detect_triggers", "consult_brain")
+    workflow.add_edge("consult_brain", "execute_auto_triggers")
+    workflow.add_edge("execute_auto_triggers", "draft_briefing")
     workflow.add_edge("draft_briefing", END)
 
     # Compile the graph

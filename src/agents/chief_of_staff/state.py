@@ -5,7 +5,7 @@ This module defines the state structure for the LangGraph agent workflow.
 The state tracks the agent's progress through the decision-making process.
 """
 
-from typing import Annotated, List, TypedDict
+from typing import Annotated, List, TypedDict, Optional
 from langgraph.graph.message import add_messages
 
 class AgentState(TypedDict):
@@ -27,6 +27,9 @@ class AgentState(TypedDict):
 
     # Final daily briefing/plan output
     daily_plan: str
+
+    # Cross-agent triggers detected from calendar events
+    triggered_actions: Optional[List[dict]]
 
     # Chat history for multi-turn conversations
     # Using Annotated with add_messages for proper message handling

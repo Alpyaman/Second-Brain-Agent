@@ -15,7 +15,7 @@ from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 
 from src.core.config import EMBEDDING_MODEL, CHROMA_DB_DIR, COLLECTION_NAME
-from tools.memory import get_relevant_preferences
+from src.tools.memory import get_relevant_preferences
 
 load_dotenv()
 

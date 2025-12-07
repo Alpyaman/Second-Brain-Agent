@@ -16,7 +16,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
-from core.config import NOTES_DIR, CHROMA_DB_DIR, COLLECTION_NAME, EMBEDDING_MODEL
+from src.core.config import NOTES_DIR, CHROMA_DB_DIR, COLLECTION_NAME, EMBEDDING_MODEL
 
 
 def find_markdown_files(directory: Path) -> List[Path]:

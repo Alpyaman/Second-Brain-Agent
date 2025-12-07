@@ -24,7 +24,7 @@ import os
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from ingestion.parent_child_code_parser import create_parent_child_documents
+from src.ingestion.parent_child_code_parser import create_parent_child_documents
 
 load_dotenv()
 

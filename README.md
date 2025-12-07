@@ -48,6 +48,15 @@ python dev_team.py --tdd-file design.md --output-dir ./my-project
 - 🐳 Docker optimization utilities (multi-stage builds, 77% smaller images)
 - 🔧 Pre-commit hooks for automated code quality
 
+**🧠 Cross-Agent Triggers (The Nervous System):**
+- 🔗 Agents automatically trigger each other based on patterns
+- 📅 Calendar events → Pre-generate project templates before meetings
+- 🏗️ "Project Kickoff" → Architect creates TDD before you arrive
+- 💻 "Sprint Planning" → Dev Team prepares review materials
+- 📚 "Research Topic" → Curator discovers and ingests resources
+- ⚡ Zero manual coordination - agents work while you sleep!
+- 📖 **[Learn More: Cross-Agent Triggers Guide](docs/CROSS_AGENT_TRIGGERS.md)**
+
 ---
 
 ## Installation (2 Minutes)
@@ -114,6 +123,24 @@ python dev_team.py --tdd-file project-tdd.md --output-dir ./mvp --phase 2
 ```
 
 **More examples**: [docs/USER_GUIDE.md#examples](docs/USER_GUIDE.md#examples)
+
+### 🧠 Try the Cross-Agent Trigger Demo
+
+See how agents automatically coordinate:
+
+```bash
+python demo_triggers.py
+```
+
+**What you'll see:**
+- 📅 Calendar events analyzed for trigger patterns
+- 🏗️ Architect auto-generates project templates
+- 💻 Dev Team prepares sprint materials
+- 📚 Curator discovers learning resources
+- 👔 Chief of Staff creates meeting briefs
+- ⚡ All working together automatically!
+
+**Real scenario:** "Project Kickoff" on your calendar → Architect generates complete TDD before the meeting starts. You arrive prepared with a professional design document ready to discuss!
 
 ---
 
