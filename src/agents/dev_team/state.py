@@ -72,6 +72,14 @@ class DevTeamState(TypedDict):
     output_directory: Optional[str]  # Where to write files
     files_written: Optional[int]     # Number of files successfully written
 
+    # ========== EXECUTION & SELF-HEALING (PHASE 3) ==========
+    execution_enabled: Optional[bool]  # Whether to execute and validate code
+    execution_results: Optional[Dict[str, Dict[str, Any]]]  # filepath -> ExecutionResult
+    execution_errors: Optional[Dict[str, List[str]]]  # filepath -> error messages
+    fix_attempts: Optional[Dict[str, int]]  # filepath -> number of fix attempts
+    max_fix_attempts: Optional[int]  # Maximum number of self-healing attempts
+    self_healing_enabled: Optional[bool]  # Whether to auto-fix errors
+
     # ========== WORKFLOW METADATA ==========
     iteration_count: int        # Number of refinement iterations
     needs_revision: bool        # Whether code needs revision
