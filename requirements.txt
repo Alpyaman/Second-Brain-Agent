@@ -151,3 +151,8 @@ xxhash==3.6.0
 yarl==1.22.0
 zipp==3.23.0
 zstandard==0.25.0
+# Phase 2 Enhanced CLI Dependencies
+typer[all]==0.9.0
+rich==13.7.0
+pydantic-settings==2.1.0
+shellingham==1.5.4

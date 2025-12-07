@@ -57,6 +57,9 @@ setup(
     },
     entry_points={
         "console_scripts": [
+            # Enhanced CLI with Typer
+            "sba=src.cli.main:app",
+            # Legacy CLI commands (backward compatibility)
             "sba-architect=architect:main",
             "sba-dev=dev_team:main",
             "sba-curator=curator:main",

@@ -101,3 +101,49 @@ setup: install-dev
 	@echo "Setting up development environment..."
 	mkdir -p logs output
 	@echo "Development environment ready!"
+
+
+# ============================================================================
+# Phase 2: Enhanced CLI Commands
+# ============================================================================
+
+# Test new CLI
+cli-test:
+	@echo "Testing enhanced CLI..."
+	sba --help
+	sba version
+	sba info
+
+# Demo architect with enhanced CLI
+demo-architect:
+	@echo "Demo: Generating TDD from job description..."
+	sba architect --job "Build a REST API for task management with user authentication" --output demo-tdd.md
+
+# Demo dev team with enhanced CLI
+demo-dev:
+	@echo "Demo: Generating code from TDD..."
+	sba dev-team --tdd demo-tdd.md --output ./demo-project
+
+# Full demo workflow
+demo-full: demo-architect demo-dev
+	@echo "Demo complete! Check ./demo-project"
+
+# Clean demo files
+clean-demo:
+	@echo "Cleaning demo files..."
+	rm -f demo-tdd.md
+	rm -rf demo-project
+
+# Test Phase 2 features
+test-phase2:
+	@echo "Testing Phase 2 features..."
+	python -c "from src.cli.main import app; print('✓ CLI module')"
+	python -c "from src.utils.output_manager import OutputManager; print('✓ Output Manager')"
+	python -c "from src.core.settings import settings; print('✓ Settings:', settings.default_model)"
+	python -c "from src.utils.progress import ProjectProgress; print('✓ Progress Tracking')"
+	@echo "All Phase 2 features loaded successfully!"
+
+# Interactive demo with progress tracking
+demo-interactive:
+	@echo "Running interactive demo..."
+	python -c "from src.utils.progress import example_simple_progress; example_simple_progress()"
