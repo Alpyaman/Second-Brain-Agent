@@ -10,13 +10,24 @@ from pathlib import Path
 readme_file = Path(__file__).parent / "README.md"
 long_description = readme_file.read_text(encoding="utf-8") if readme_file.exists() else ""
 
-# Read requirements
+# Read requirements with error handling
 requirements_file = Path(__file__).parent / "requirements.txt"
 requirements = []
 if requirements_file.exists():
+    try:
+        # Try UTF-8 first
+        content = requirements_file.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        # Fall back to UTF-8 with BOM or other encodings
+        try:
+            content = requirements_file.read_text(encoding="utf-8-sig")
+        except UnicodeDecodeError:
+            # Last resort: read as latin-1 which never fails
+            content = requirements_file.read_text(encoding="latin-1")
+    
     requirements = [
         line.strip() 
-        for line in requirements_file.read_text(encoding="utf-8").splitlines()
+        for line in content.splitlines()
         if line.strip() and not line.startswith("#")
     ]
 

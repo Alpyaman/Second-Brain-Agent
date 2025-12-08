@@ -101,6 +101,13 @@ def architect(
     """
     print_header("ARCHITECT SESSION", "Generate professional TDD from job description")
     
+    # Initialize analytics tracking
+    from src.utils.analytics import get_analytics
+    import time
+    analytics = get_analytics()
+    start_time = time.time()
+    success = False
+    
     try:
         # Get job description
         if job_file:
@@ -195,6 +202,22 @@ def architect(
                 console.print("\n[dim]Exiting interactive mode[/dim]")
         
         logger.info(f"Architect session completed. Output: {output}")
+        success = True
+        
+        # Track successful generation
+        duration = time.time() - start_time
+        analytics.track_generation(
+            project_name=state.get('project_name', 'cli-architect'),
+            duration_seconds=duration,
+            tokens_used=state.get('total_tokens', 0),
+            estimated_cost=state.get('total_cost', 0.0),
+            success=True,
+            project_type='tdd',
+            framework='architect',
+            cache_hits=state.get('cache_hits', 0),
+            cache_misses=state.get('cache_misses', 0),
+            llm_requests=state.get('llm_calls', 1)
+        )
         
     except ValidationError as e:
         print_error(f"Validation error: {e}")
@@ -203,6 +226,20 @@ def architect(
     except Exception as e:
         print_error(f"Error: {e}")
         logger.exception("Error in architect command")
+        
+        # Track failed generation
+        if not success:
+            duration = time.time() - start_time
+            analytics.track_generation(
+                project_name='failed',
+                duration_seconds=duration,
+                tokens_used=0,
+                estimated_cost=0.0,
+                success=False,
+                project_type='tdd',
+                framework='architect'
+            )
+        
         raise typer.Exit(code=1)
 
 
@@ -260,6 +297,13 @@ def dev_team(
         sba dev-team -t design.md -p 1  # Run only phase 1
     """
     print_header("DEV TEAM SESSION", "Transform TDD into working code")
+    
+    # Initialize analytics tracking
+    from src.utils.analytics import get_analytics
+    import time
+    analytics = get_analytics()
+    start_time = time.time()
+    success_flag = False
     
     try:
         # Validate TDD file
@@ -353,6 +397,24 @@ def dev_team(
         console.print("  3. Open http://localhost:3000")
         
         logger.info(f"Dev team session completed. Output: {output_dir}")
+        success_flag = True
+        
+        # Track successful generation
+        duration = time.time() - start_time
+        result_dict = state if isinstance(state, dict) else {}
+        tech_stack = result_dict.get('tech_stack', {})
+        analytics.track_generation(
+            project_name=result_dict.get('project_metadata', {}).get('project_name', 'cli-devteam'),
+            duration_seconds=duration,
+            tokens_used=result_dict.get('total_tokens', 0),
+            estimated_cost=result_dict.get('total_cost', 0.0),
+            success=True,
+            project_type=result_dict.get('project_metadata', {}).get('project_type', 'unknown'),
+            framework=', '.join(tech_stack.get('backend', []) + tech_stack.get('frontend', [])),
+            cache_hits=result_dict.get('cache_hits', 0),
+            cache_misses=result_dict.get('cache_misses', 0),
+            llm_requests=result_dict.get('llm_calls', 1)
+        )
         
     except ValidationError as e:
         print_error(f"Validation error: {e}")
@@ -361,6 +423,20 @@ def dev_team(
     except Exception as e:
         print_error(f"Error: {e}")
         logger.exception("Error in dev-team command")
+        
+        # Track failed generation
+        if not success_flag:
+            duration = time.time() - start_time
+            analytics.track_generation(
+                project_name='failed',
+                duration_seconds=duration,
+                tokens_used=0,
+                estimated_cost=0.0,
+                success=False,
+                project_type='unknown',
+                framework='unknown'
+            )
+        
         raise typer.Exit(code=1)
 
 
@@ -424,5 +500,189 @@ def info():
     console.print(dep_table)
 
 
+@app.command()
+def analytics(
+    format: str = typer.Option("text", "--format", "-f", help="Output format (text, markdown, json)"),
+    export: Optional[Path] = typer.Option(None, "--export", "-e", help="Export metrics to file"),
+    export_format: str = typer.Option("csv", "--export-format", help="Export format (csv, json)"),
+    insights: bool = typer.Option(False, "--insights", "-i", help="Show cost optimization insights"),
+    clear_old: Optional[int] = typer.Option(None, "--clear-old", help="Clear metrics older than N days")
+):
+    """
+    📊 View analytics and performance metrics
+    
+    Examples:
+        sba analytics                     # View text report
+        sba analytics -f markdown         # View markdown report
+        sba analytics --insights          # Show cost insights
+        sba analytics -e metrics.csv      # Export to CSV
+        sba analytics --clear-old 90      # Clear old metrics
+    """
+    print_header("📊 Analytics Dashboard", "Project generation metrics and insights")
+    
+    try:
+        from src.utils.analytics import get_analytics
+        
+        analytics_obj = get_analytics()
+        
+        # Clear old metrics if requested
+        if clear_old:
+            console.print(f"[yellow]Clearing metrics older than {clear_old} days...[/yellow]")
+            analytics_obj.clear_old_metrics(days=clear_old)
+            print_success("Cleared old metrics")
+            return
+        
+        # Export if requested
+        if export:
+            console.print(f"[yellow]Exporting metrics to {export}...[/yellow]")
+            analytics_obj.export_metrics(export, format=export_format)
+            print_success(f"Exported metrics to {export}")
+            return
+        
+        # Show insights if requested
+        if insights:
+            insights_data = analytics_obj.get_cost_insights()
+            
+            if insights_data['insights']:
+                console.print("\n[bold yellow]💡 Cost Insights:[/bold yellow]")
+                for insight in insights_data['insights']:
+                    console.print(f"  • {insight}")
+                
+                console.print("\n[bold cyan]📋 Recommendations:[/bold cyan]")
+                for rec in insights_data['recommendations']:
+                    console.print(f"  • {rec}")
+                
+                # Show metrics
+                metrics = insights_data['metrics']
+                console.print("\n[bold]Current Metrics:[/bold]")
+                console.print(f"  Average Cost: ${metrics['avg_cost']:.4f}")
+                console.print(f"  Cache Hit Rate: {metrics['cache_hit_rate']:.1%}")
+                console.print(f"  Average Tokens: {metrics['avg_tokens']:.0f}")
+                console.print(f"  Average Duration: {metrics['avg_duration']:.1f}s")
+            else:
+                console.print("[dim]No insights available yet. Generate more projects![/dim]")
+            
+            return
+        
+        # Generate and display report
+        report = analytics_obj.generate_report(format=format)
+        
+        if format == "json":
+            import json
+            # Pretty print JSON
+            data = json.loads(report)
+            console.print_json(data=data)
+        else:
+            console.print(report)
+        
+    except Exception as e:
+        print_error(f"Error generating analytics: {str(e)}")
+        logger.error(f"Analytics error: {e}", exc_info=True)
+        raise typer.Exit(1)
+
+
+@app.command()
+def security_scan(
+    directory: Path = typer.Argument(..., help="Directory to scan for security issues"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Save report to file"),
+    format: str = typer.Option("text", "--format", "-f", help="Output format (text, json)"),
+    severity: str = typer.Option("all", "--severity", "-s", help="Minimum severity (critical, high, medium, low, info, all)")
+):
+    """
+    🔒 Scan code for security vulnerabilities
+    
+    Examples:
+        sba security-scan ./output/MyProject        # Scan project
+        sba security-scan ./src -s high             # Only high+ severity
+        sba security-scan ./app -o report.json -f json  # Save JSON report
+    """
+    print_header("🔒 Security Scanner", f"Scanning {directory}")
+    
+    try:
+        from src.utils.security_scanner import SecurityScanner
+        
+        if not directory.exists():
+            print_error(f"Directory not found: {directory}")
+            raise typer.Exit(1)
+        
+        scanner = SecurityScanner()
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            console=console
+        ) as progress:
+            task = progress.add_task("Scanning for vulnerabilities...", total=None)
+            issues = scanner.scan_directory(str(directory))
+            progress.update(task, completed=True)
+        
+        # Filter by severity
+        severity_levels = {
+            "critical": 0,
+            "high": 1,
+            "medium": 2,
+            "low": 3,
+            "info": 4,
+            "all": 5
+        }
+        
+        min_severity = severity_levels.get(severity.lower(), 5)
+        filtered_issues = [
+            issue for issue in issues
+            if severity_levels.get(issue.severity.lower(), 5) <= min_severity
+        ]
+        
+        # Temporarily replace scanner issues for filtered report
+        original_issues = scanner.issues
+        scanner.issues = filtered_issues
+        scanner.stats['issues_found'] = len(filtered_issues)
+        
+        # Generate report
+        report = scanner.generate_report(format=format)
+        
+        # Restore original issues
+        scanner.issues = original_issues
+        
+        # Save or print
+        if output:
+            output.write_text(report, encoding='utf-8')
+            print_success(f"Report saved to {output}")
+        else:
+            if format == "json":
+                import json
+                data = json.loads(report)
+                console.print_json(data=data)
+            else:
+                console.print(report)
+        
+        # Summary
+        if filtered_issues:
+            severity_count = {}
+            for issue in filtered_issues:
+                severity_count[issue.severity] = severity_count.get(issue.severity, 0) + 1
+            
+            console.print("\n[bold]Summary:[/bold]")
+            for sev in ["Critical", "High", "Medium", "Low", "Info"]:
+                count = severity_count.get(sev, 0)
+                if count > 0:
+                    color = {
+                        "Critical": "red",
+                        "High": "red",
+                        "Medium": "yellow",
+                        "Low": "blue",
+                        "Info": "dim"
+                    }.get(sev, "white")
+                    console.print(f"  [{color}]{sev}: {count}[/{color}]")
+        else:
+            print_success("No security issues found!")
+        
+    except Exception as e:
+        print_error(f"Error during security scan: {str(e)}")
+        logger.error(f"Security scan error: {e}", exc_info=True)
+        raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()
+

@@ -21,9 +21,11 @@ Usage:
 
 import argparse
 import traceback
+import time
 from pathlib import Path
 from src.agents.dev_team.graph import run_dev_team, run_dev_team_v2
 from src.core.config import CHROMA_DB_DIR
+from src.utils.analytics import get_analytics
 
 def check_expert_brains():
     """
@@ -235,12 +237,46 @@ def main():
 
             print("Launching Phase 2 development team...\n")
 
-            # Run Phase 2 workflow
-            result = run_dev_team_v2(
-                tdd_content=tdd_content,
-                implementation_phase=args.phase,
-                output_directory=args.output_dir or './generated_project'
-            )
+            # Track analytics
+            analytics = get_analytics()
+            start_time = time.time()
+            
+            try:
+                # Run Phase 2 workflow
+                result = run_dev_team_v2(
+                    tdd_content=tdd_content,
+                    implementation_phase=args.phase,
+                    output_directory=args.output_dir or './generated_project'
+                )
+                
+                # Track successful generation
+                duration = time.time() - start_time
+                tech_stack = result.get('tech_stack', {})
+                analytics.track_generation(
+                    project_name=result.get('project_metadata', {}).get('project_name', 'unknown'),
+                    duration_seconds=duration,
+                    tokens_used=result.get('total_tokens', 0),
+                    estimated_cost=result.get('total_cost', 0.0),
+                    success=True,
+                    project_type=result.get('project_metadata', {}).get('project_type', 'unknown'),
+                    framework=', '.join(tech_stack.get('backend', []) + tech_stack.get('frontend', [])),
+                    cache_hits=result.get('cache_hits', 0),
+                    cache_misses=result.get('cache_misses', 0),
+                    llm_requests=result.get('llm_calls', 1)
+                )
+            except Exception as e:
+                # Track failed generation
+                duration = time.time() - start_time
+                analytics.track_generation(
+                    project_name='failed',
+                    duration_seconds=duration,
+                    tokens_used=0,
+                    estimated_cost=0.0,
+                    success=False,
+                    project_type='unknown',
+                    framework='unknown'
+                )
+                raise
 
             # Display summary
             print("\n" + "=" * 70)
@@ -293,7 +329,40 @@ def main():
         print("=" * 70)
         print(f"\nFeature: {args.feature}\n")
 
-        result = run_dev_team(args.feature)
+        # Track analytics
+        analytics = get_analytics()
+        start_time = time.time()
+        
+        try:
+            result = run_dev_team(args.feature)
+            
+            # Track successful generation
+            duration = time.time() - start_time
+            analytics.track_generation(
+                project_name=args.feature[:50],
+                duration_seconds=duration,
+                tokens_used=result.get('total_tokens', 0),
+                estimated_cost=result.get('total_cost', 0.0),
+                success=result.get('review_status') != 'rejected',
+                project_type='feature',
+                framework='phase1',
+                cache_hits=result.get('cache_hits', 0),
+                cache_misses=result.get('cache_misses', 0),
+                llm_requests=result.get('llm_calls', 1)
+            )
+        except Exception as e:
+            # Track failed generation
+            duration = time.time() - start_time
+            analytics.track_generation(
+                project_name=args.feature[:50],
+                duration_seconds=duration,
+                tokens_used=0,
+                estimated_cost=0.0,
+                success=False,
+                project_type='feature',
+                framework='phase1'
+            )
+            raise
 
         print("\n" + "=" * 70)
         print("DEVELOPMENT COMPLETE")

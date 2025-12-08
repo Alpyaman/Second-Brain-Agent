@@ -196,7 +196,7 @@ def delete_preference(category: str, rule_index: int) -> str:
 
     save_preferences(preferences)
 
-    return f"Deleted preference: '{removed['rule']}'"
+    return f"Deleted preference: {removed['rule']}"
 
 def clear_preferences(category: str = None) -> str:
     """

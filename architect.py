@@ -13,8 +13,10 @@ Usage:
 
 import os
 import argparse
+import time
 from pathlib import Path
 from src.agents.architect.graph import run_architect_session
+from src.utils.analytics import get_analytics
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -158,6 +160,9 @@ def interactive_mode(is_job_description: bool = False):
 
 def single_run_mode(goal: str, is_job_description: bool = False):
     """Run a single architect session without interaction."""
+    analytics = get_analytics()
+    start_time = time.time()
+    
     if is_job_description:
         print_section_header("  INSTANT CONSULTANT - Job Description Mode")
         print("Generating professional Technical Design Document from job posting...\n")
@@ -165,8 +170,37 @@ def single_run_mode(goal: str, is_job_description: bool = False):
         print_section_header("  ARCHITECT SESSION - Single Run Mode")
         print(f"Goal: {goal}\n")
 
-    # Run design generation
-    state = run_architect_session(goal=goal, is_job_description=is_job_description)
+    try:
+        # Run design generation
+        state = run_architect_session(goal=goal, is_job_description=is_job_description)
+
+        # Track successful generation
+        duration = time.time() - start_time
+        analytics.track_generation(
+            project_name=state.get('project_name', goal[:50]),
+            duration_seconds=duration,
+            tokens_used=state.get('total_tokens', 0),
+            estimated_cost=state.get('total_cost', 0.0),
+            success=True,
+            project_type='tdd',
+            framework='architect',
+            cache_hits=state.get('cache_hits', 0),
+            cache_misses=state.get('cache_misses', 0),
+            llm_requests=state.get('llm_calls', 1)
+        )
+    except Exception as e:
+        # Track failed generation
+        duration = time.time() - start_time
+        analytics.track_generation(
+            project_name='failed',
+            duration_seconds=duration,
+            tokens_used=0,
+            estimated_cost=0.0,
+            success=False,
+            project_type='tdd',
+            framework='architect'
+        )
+        raise
 
     # Display the design
     print_design_document(state['design_document'], state['iteration_count'])

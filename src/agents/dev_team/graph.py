@@ -1464,6 +1464,13 @@ def generate_scaffolding_node(state: DevTeamState) -> DevTeamState:
     if has_docker_tech or (has_frontend and has_backend):
         print("Generating docker-compose.yml...")
         config_files['docker-compose.yml'] = generate_docker_compose(state, tech_stack)
+    
+    # Phase 2/3: Advanced scaffolding for microservices
+    project_type = state.get('project_type', 'web_app')
+    if project_type == 'web_app' and (has_frontend and has_backend):
+        print("\nGenerating Phase 2/3 advanced infrastructure...")
+        advanced_files = generate_advanced_scaffolding(state, tech_stack)
+        config_files.update(advanced_files)
 
     state['config_files'] = config_files
     print(f"\n✓ Generated {len(config_files)} configuration files")
@@ -1507,6 +1514,94 @@ def infer_tech_stack_from_files(state: DevTeamState) -> Dict[str, List[str]]:
         tech_stack['devops'].append('Docker')
     
     return tech_stack
+
+
+def generate_advanced_scaffolding(state: DevTeamState, tech_stack: Dict[str, List[str]]) -> Dict[str, str]:
+    """
+    Generate advanced scaffolding for Phase 2/3 features.
+    
+    Includes:
+    - Message queue setup (Kafka/RabbitMQ)
+    - Kubernetes deployment configs
+    - Monitoring setup (Prometheus, Grafana)
+    - CI/CD pipelines
+    - Microservice templates
+    """
+    from src.agents.dev_team.advanced_scaffolder import (
+        generate_kafka_docker_compose,
+        generate_kubernetes_deployment,
+        generate_kubernetes_ingress,
+        generate_prometheus_config,
+        generate_github_actions_ci,
+        generate_microservice_template,
+        generate_env_template
+    )
+    
+    advanced_files = {}
+    
+    # Check if TDD mentions message queues
+    tdd_content = state.get('tdd_content', '').lower()
+    has_message_queue = 'kafka' in tdd_content or 'rabbitmq' in tdd_content or 'message queue' in tdd_content
+    has_microservices = 'microservice' in tdd_content or 'event-driven' in tdd_content
+    
+    # Generate enhanced docker-compose with message queue
+    if has_message_queue:
+        print("  - docker-compose-full.yml (with Kafka, MongoDB, Redis)")
+        advanced_files['docker-compose-full.yml'] = generate_kafka_docker_compose()
+    
+    # Generate Kubernetes configs
+    if has_microservices or 'kubernetes' in tdd_content:
+        print("  - k8s/backend-deployment.yaml")
+        advanced_files['k8s/backend-deployment.yaml'] = generate_kubernetes_deployment(
+            'backend-api', 8000, 'your-registry/backend:latest'
+        )
+        print("  - k8s/frontend-deployment.yaml")
+        advanced_files['k8s/frontend-deployment.yaml'] = generate_kubernetes_deployment(
+            'frontend', 3000, 'your-registry/frontend:latest'
+        )
+        print("  - k8s/ingress.yaml")
+        advanced_files['k8s/ingress.yaml'] = generate_kubernetes_ingress(
+            'yourdomain.com',
+            [
+                {'name': 'backend-api', 'subdomain': 'api', 'port': 8000},
+                {'name': 'frontend', 'subdomain': 'app', 'port': 3000}
+            ]
+        )
+    
+    # Generate monitoring configs
+    if 'monitoring' in tdd_content or 'prometheus' in tdd_content:
+        print("  - monitoring/prometheus.yml")
+        advanced_files['monitoring/prometheus.yml'] = generate_prometheus_config()
+    
+    # Generate CI/CD pipelines
+    print("  - .github/workflows/ci-cd.yml")
+    advanced_files['.github/workflows/ci-cd.yml'] = generate_github_actions_ci()
+    
+    # Generate microservice templates if needed
+    if has_microservices:
+        # Extract service names from TDD
+        services = []
+        if 'news ingestion' in tdd_content:
+            services.append(('news_ingestion', 8001))
+        if 'ai analysis' in tdd_content or 'ai-driven' in tdd_content:
+            services.append(('ai_analysis', 8002))
+        if 'alert generation' in tdd_content or 'alert' in tdd_content:
+            services.append(('alert_generation', 8003))
+        if 'market data' in tdd_content:
+            services.append(('market_data', 8004))
+        
+        for service_name, port in services:
+            print(f"  - services/{service_name}/main.py")
+            advanced_files[f'services/{service_name}/main.py'] = generate_microservice_template(
+                service_name, port
+            )
+    
+    # Generate .env template
+    print("  - .env.template")
+    advanced_files['.env.template'] = generate_env_template()
+    
+    return advanced_files
+
 
 def write_files_node(state: DevTeamState) -> DevTeamState:
     """
