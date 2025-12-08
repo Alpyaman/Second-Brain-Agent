@@ -1,0 +1,37 @@
+User table:
+    id: integer, primary key
+    username: string(50), unique, not null
+    email: string(100), unique, not null, index
+    password_hash: string(255), not null
+    first_name: string(100)
+    last_name: string(100)
+    is_active: boolean, default: true
+    is_admin: boolean, default: false
+    created_at: datetime, default: now
+    updated_at: datetime
+
+Post table:
+    id: integer, primary key
+    title: string(200), not null, index
+    slug: string(200), unique, not null
+    content: text
+    excerpt: string(500)
+    user_id: integer, foreign key: User.id, not null
+    published: boolean, default: false
+    view_count: integer, default: 0
+    created_at: datetime, default: now
+    updated_at: datetime
+
+Comment table:
+    id: integer, primary key
+    post_id: integer, foreign key: Post.id, not null
+    user_id: integer, foreign key: User.id, not null
+    content: text, not null
+    approved: boolean, default: false
+    created_at: datetime, default: now
+
+Tag table:
+    id: integer, primary key
+    name: string(50), unique, not null
+    slug: string(50), unique, not null
+    created_at: datetime, default: now

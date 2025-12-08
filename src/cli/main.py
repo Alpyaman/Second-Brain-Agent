@@ -10,7 +10,6 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.table import Table
-from rich import print as rprint
 
 from src.utils.logger import setup_logger
 from src.utils.validators import validate_job_description, validate_tdd_file
@@ -441,6 +440,142 @@ def dev_team(
 
 
 @app.command()
+def generate_migration(
+    schema_file: Optional[Path] = typer.Option(
+        None,
+        "--schema",
+        "-s",
+        help="Path to schema definition file",
+        exists=True,
+    ),
+    schema_text: Optional[str] = typer.Option(
+        None,
+        "--text",
+        "-t",
+        help="Schema definition as text",
+    ),
+    orm: str = typer.Option(
+        "alembic",
+        "--orm",
+        "-o",
+        help="ORM type (alembic, django, prisma, typeorm)",
+    ),
+    name: str = typer.Option(
+        "initial",
+        "--name",
+        "-n",
+        help="Migration name",
+    ),
+    output_dir: Path = typer.Option(
+        "./migrations",
+        "--output",
+        help="Output directory for migration files",
+    ),
+):
+    """
+    🗄️  Generate database migration files
+    
+    Examples:
+        sba generate-migration -s schema.txt -o alembic -n add_users
+        sba generate-migration -t "User: id:int,pk email:string(100)" -o django
+        sba generate-migration -s schema.txt -o prisma --output ./prisma
+    """
+    print_header("MIGRATION GENERATOR", f"Generate {orm.upper()} migration")
+    
+    try:
+        from src.utils.migration_generator import MigrationGenerator
+        
+        generator = MigrationGenerator()
+        
+        # Get schema
+        if schema_file:
+            print_info(f"Reading schema from: {schema_file}")
+            schema_content = schema_file.read_text(encoding="utf-8")
+        elif schema_text:
+            schema_content = schema_text
+        else:
+            print_error("Please provide either --schema or --text")
+            raise typer.Exit(code=1)
+        
+        # Parse schema
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("[cyan]Parsing schema...", total=None)
+            tables = generator.parse_schema_from_text(schema_content)
+            progress.update(task, completed=True)
+        
+        if not tables:
+            print_error("No tables found in schema")
+            raise typer.Exit(code=1)
+        
+        print_success(f"Parsed {len(tables)} table(s)")
+        
+        # Show parsed tables
+        table_info = Table(title="Parsed Schema", show_header=True)
+        table_info.add_column("Table", style="cyan")
+        table_info.add_column("Columns", justify="right", style="green")
+        
+        for table in tables:
+            table_info.add_row(table.name, str(len(table.columns)))
+        
+        console.print(table_info)
+        console.print()
+        
+        # Generate migration
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task(f"[cyan]Generating {orm} migration...", total=None)
+            
+            if orm == 'alembic':
+                migration = generator.generate_alembic_migration(tables, name)
+            elif orm == 'django':
+                migration = generator.generate_django_migration(tables)
+            elif orm == 'prisma':
+                migration = generator.generate_prisma_migration(tables, name)
+            elif orm == 'typeorm':
+                migration = generator.generate_typeorm_migration(tables, name)
+            else:
+                print_error(f"Unsupported ORM: {orm}")
+                raise typer.Exit(code=1)
+            
+            progress.update(task, completed=True)
+        
+        # Save migration
+        file_path = generator.save_migration(migration, output_dir, orm, name)
+        
+        print_success("Migration generated successfully!")
+        console.print(f"\n[bold]File saved to:[/bold] [link=file://{file_path.absolute()}]{file_path}[/link]")
+        
+        # Show next steps
+        console.print("\n[bold yellow]Next Steps:[/bold yellow]")
+        if orm == 'alembic':
+            console.print("  1. Review the migration file")
+            console.print("  2. Run: alembic upgrade head")
+        elif orm == 'django':
+            console.print("  1. Review the migration file")
+            console.print("  2. Run: python manage.py migrate")
+        elif orm == 'prisma':
+            console.print("  1. Review the schema file")
+            console.print("  2. Run: npx prisma migrate dev --name " + name)
+        elif orm == 'typeorm':
+            console.print("  1. Review the migration file")
+            console.print("  2. Run: npm run typeorm migration:run")
+        
+        logger.info(f"Migration generated: {file_path}")
+        
+    except Exception as e:
+        print_error(f"Error: {e}")
+        logger.exception("Error in generate-migration command")
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def version():
     """Show version information."""
     from importlib.metadata import version as get_version
@@ -680,6 +815,179 @@ def security_scan(
     except Exception as e:
         print_error(f"Error during security scan: {str(e)}")
         logger.error(f"Security scan error: {e}", exc_info=True)
+        raise typer.Exit(1)
+
+
+@app.command()
+def generate_tests(
+    source_file: Path = typer.Argument(
+        ...,
+        help="Source file to generate tests for",
+        exists=True,
+    ),
+    output_dir: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output directory for tests (default: tests/unit/)",
+    ),
+    test_type: str = typer.Option(
+        "unit",
+        "--type",
+        "-t",
+        help="Test type: unit, integration, e2e",
+    ),
+    test_style: str = typer.Option(
+        "standard",
+        "--style",
+        "-s",
+        help="Test style: standard, tdd, bdd",
+    ),
+    format: str = typer.Option(
+        "text",
+        "--format",
+        "-f",
+        help="Output format for report: text, json",
+    ),
+):
+    """
+    🧪 Generate unit tests for Python or TypeScript files.
+    
+    Automatically creates comprehensive test suites with:
+    - Unit tests for functions and classes
+    - Mock data generators
+    - Fixtures and test helpers
+    - pytest (Python) or Jest (TypeScript) format
+    
+    Examples:
+        sba generate-tests src/utils/validators.py
+        sba generate-tests src/core/brain.py -o tests/unit/ -s bdd
+        sba generate-tests frontend/utils.ts -t integration
+    """
+    try:
+        print_header(
+            "TEST GENERATOR",
+            f"Generate {test_type.upper()} tests for {source_file.name}"
+        )
+        
+        # Import here to avoid circular dependency
+        from src.utils.test_generator import TestGenerator
+        import time
+        
+        # Track with analytics
+        try:
+            from src.utils.analytics import get_analytics
+            analytics = get_analytics()
+            start_time = time.time()
+        except Exception:
+            analytics = None
+        
+        # Initialize generator
+        generator = TestGenerator()
+        
+        # Parse source file
+        print_info(f"Analyzing source file: {source_file}")
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Parsing code structure...", total=None)
+            
+            # Generate tests
+            test_code = generator.generate_tests(
+                source_file,
+                test_type=test_type,
+                test_style=test_style
+            )
+            
+            progress.update(task, completed=True)
+        
+        print_success(f"Generated {len(test_code.splitlines())} lines of test code")
+        
+        # Display summary
+        if source_file.suffix == '.py':
+            # Parse Python file for summary
+            module_info = generator.python_generator.parse_python_file(source_file)
+            
+            table = Table(title="Code Analysis")
+            table.add_column("Component", style="cyan")
+            table.add_column("Count", justify="right", style="green")
+            
+            table.add_row("Functions", str(len(module_info.functions)))
+            table.add_row("Classes", str(len(module_info.classes)))
+            
+            # Count methods
+            method_count = sum(len(cls.methods) for cls in module_info.classes)
+            if method_count > 0:
+                table.add_row("Methods", str(method_count))
+            
+            console.print()
+            console.print(table)
+        
+        # Save tests
+        print_info("Saving tests...")
+        
+        test_file = generator.save_tests(
+            source_file,
+            output_dir=output_dir,
+            test_type=test_type,
+            test_style=test_style
+        )
+        
+        console.print()
+        print_success(f"Tests saved to: {test_file}")
+        
+        # Show next steps
+        console.print("\n[bold cyan]Next Steps:[/bold cyan]")
+        if source_file.suffix == '.py':
+            console.print("  1. Review the generated test file")
+            console.print(f"  2. Run: [bold]pytest {test_file} -v[/bold]")
+            console.print("  3. Customize tests as needed")
+        else:
+            console.print("  1. Review the generated test file")
+            console.print(f"  2. Run: [bold]npm test {test_file.name}[/bold]")
+            console.print("  3. Customize tests as needed")
+        
+        # Track success
+        if analytics:
+            duration = time.time() - start_time
+            analytics.track_generation(
+                project_name=f"test_{source_file.stem}",
+                duration_seconds=duration,
+                tokens_used=len(test_code) // 4,  # Rough estimate
+                estimated_cost=0.0,
+                success=True,
+                project_type="test_generation",
+                framework="pytest" if source_file.suffix == '.py' else "jest",
+                cache_hits=0,
+                cache_misses=0,
+                llm_requests=0
+            )
+        
+        logger.info(f"Test generation complete: {test_file}")
+        
+    except Exception as e:
+        print_error(f"Error generating tests: {str(e)}")
+        logger.error(f"Test generation error: {e}", exc_info=True)
+        
+        # Track failure
+        if analytics:
+            duration = time.time() - start_time
+            analytics.track_generation(
+                project_name=f"test_{source_file.stem}",
+                duration_seconds=duration,
+                tokens_used=0,
+                estimated_cost=0.0,
+                success=False,
+                project_type="test_generation",
+                framework="pytest" if source_file.suffix == '.py' else "jest",
+                cache_hits=0,
+                cache_misses=0,
+                llm_requests=0
+            )
+        
         raise typer.Exit(1)
 
 
