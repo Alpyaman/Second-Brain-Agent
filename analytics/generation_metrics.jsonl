@@ -1,1 +1,0 @@
-{"project_name": "test_sample_calculator", "timestamp": "2025-12-08T14:11:49.694829", "duration_seconds": 0.02025628089904785, "tokens_used": 1319, "estimated_cost": 0.0, "success": true, "project_type": "test_generation", "framework": "pytest", "cache_hits": 0, "cache_misses": 0, "llm_requests": 0, "error_message": null}

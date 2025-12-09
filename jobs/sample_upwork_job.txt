@@ -1,0 +1,52 @@
+Build a Task Management Web Application
+
+I'm looking for an experienced full-stack developer to build a modern task management application similar to Trello or Asana.
+
+Project Requirements:
+
+Backend:
+- RESTful API using Node.js/Express or Python/FastAPI
+- PostgreSQL database
+- User authentication (JWT)
+- Task CRUD operations
+- Project boards with columns
+- User assignment to tasks
+- Due dates and priorities
+- File attachments support
+- Real-time updates (WebSocket)
+
+Frontend:
+- React.js with modern UI (Material-UI or Tailwind)
+- Drag-and-drop functionality for tasks
+- Responsive design (mobile-friendly)
+- Dashboard with analytics
+- User profile management
+- Dark mode support
+
+Additional Features:
+- Email notifications for task assignments
+- Search and filter functionality
+- Export tasks to CSV
+- Activity log/audit trail
+- Docker containerization
+- Comprehensive API documentation
+
+Technical Requirements:
+- Clean, well-documented code
+- Unit tests (>70% coverage)
+- Git version control
+- Deployment instructions
+- CI/CD pipeline setup
+
+Timeline: Need this completed within 6-8 weeks
+
+Budget: $3,000-$7,000 depending on experience
+
+Please provide:
+1. Your relevant experience
+2. Examples of similar projects
+3. Your proposed tech stack
+4. Estimated timeline
+5. Any questions or clarifications needed
+
+Looking forward to your proposals!

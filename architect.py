@@ -190,6 +190,7 @@ def single_run_mode(goal: str, is_job_description: bool = False):
         )
     except Exception as e:
         # Track failed generation
+        print(f"Error during design generation: {e}")
         duration = time.time() - start_time
         analytics.track_generation(
             project_name='failed',

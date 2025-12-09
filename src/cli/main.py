@@ -991,6 +991,298 @@ def generate_tests(
         raise typer.Exit(1)
 
 
+@app.command()
+def freelance_proposal(
+    job_file: Path = typer.Argument(
+        ...,
+        help="Path to job description file",
+        exists=True,
+    ),
+    client_name: str = typer.Option(
+        "Client",
+        "--client",
+        "-c",
+        help="Client/company name",
+    ),
+    output_dir: Path = typer.Option(
+        Path("proposals"),
+        "--output",
+        "-o",
+        help="Output directory for proposals",
+    ),
+    hourly_rate: int = typer.Option(
+        50,
+        "--rate",
+        "-r",
+        help="Your hourly rate in USD",
+    ),
+):
+    """
+    💼 Generate freelance proposal with timeline and cost estimates.
+    
+    Perfect for Upwork, Freelancer, and other platforms. Generates a
+    professional technical proposal in under 5 minutes.
+    
+    Examples:
+        sba freelance-proposal jobs/upwork_job.txt -c "TechCorp"
+        sba freelance-proposal jobs/app_dev.txt -c "StartupXYZ" -r 75
+    """
+    try:
+        import time
+        from datetime import datetime, timedelta
+        
+        print_header(
+            "FREELANCE PROPOSAL GENERATOR",
+            f"Creating proposal for {client_name}"
+        )
+        
+        # Read job description
+        job_description = job_file.read_text(encoding='utf-8')
+        
+        print_info(f"Analyzing job requirements from: {job_file.name}")
+        
+        # Import architect to generate TDD
+        from src.agents.architect.graph import run_architect_session
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Generating technical analysis...", total=None)
+            
+            # Generate TDD
+            result = run_architect_session(job_description, is_job_description=True)
+            tdd = {
+                'design_document': result.get('design_document', ''),
+                'architecture_notes': result.get('architecture_notes', ''),
+            }
+            
+            progress.update(task, completed=True)
+        
+        print_success("Technical analysis complete")
+        
+        # Extract design document
+        design_doc = tdd.get('design_document', '')
+        
+        # Analyze complexity
+        components = len([line for line in design_doc.split('\n') if '##' in line or '###' in line])
+        
+        if components < 5:
+            complexity = "Low"
+            min_hours = 20
+            max_hours = 40
+        elif components < 10:
+            complexity = "Medium"
+            min_hours = 40
+            max_hours = 80
+        else:
+            complexity = "High"
+            min_hours = 80
+            max_hours = 160
+        
+        # Calculate costs
+        min_cost = min_hours * hourly_rate
+        max_cost = max_hours * hourly_rate
+        
+        # Calculate timeline
+        hours_per_day = 6
+        min_days = min_hours / hours_per_day
+        max_days = max_hours / hours_per_day
+        min_weeks = min_days / 5
+        max_weeks = max_days / 5
+        
+        # Calculate dates
+        start_date = datetime.now()
+        min_completion = start_date + timedelta(days=min_days)
+        max_completion = start_date + timedelta(days=max_days)
+        
+        # Display summary
+        console.print("\n")
+        table = Table(title="📊 Proposal Summary", show_header=True, header_style="bold cyan")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="green")
+        
+        table.add_row("Client", client_name)
+        table.add_row("Complexity", complexity)
+        table.add_row("Estimated Hours", f"{min_hours}-{max_hours} hours")
+        table.add_row("Estimated Cost", f"${min_cost:,}-${max_cost:,}")
+        table.add_row("Timeline", f"{min_weeks:.1f}-{max_weeks:.1f} weeks")
+        table.add_row("Earliest Completion", min_completion.strftime('%Y-%m-%d'))
+        
+        console.print(table)
+        console.print()
+        
+        # Generate milestones
+        avg_weeks = (min_weeks + max_weeks) / 2
+        
+        if avg_weeks <= 2:
+            milestones = [
+                {"name": "Week 1", "deliverable": "Core functionality + basic UI", "percentage": 70},
+                {"name": "Week 2", "deliverable": "Testing, documentation, deployment", "percentage": 30},
+            ]
+        elif avg_weeks <= 4:
+            milestones = [
+                {"name": "Week 1-2", "deliverable": "Backend API + Database", "percentage": 40},
+                {"name": "Week 3", "deliverable": "Frontend + Integration", "percentage": 40},
+                {"name": "Week 4", "deliverable": "Testing + Deployment", "percentage": 20},
+            ]
+        else:
+            milestones = [
+                {"name": "Week 1-2", "deliverable": "Architecture + Core Backend", "percentage": 30},
+                {"name": "Week 3-4", "deliverable": "API Development", "percentage": 30},
+                {"name": "Week 5-6", "deliverable": "Frontend Development", "percentage": 25},
+                {"name": "Week 7+", "deliverable": "Testing, QA, Deployment", "percentage": 15},
+            ]
+        
+        # Display milestones
+        milestone_table = Table(title="🎯 Project Milestones", show_header=True, header_style="bold cyan")
+        milestone_table.add_column("Phase", style="cyan")
+        milestone_table.add_column("Deliverable", style="white")
+        milestone_table.add_column("% of Project", justify="right", style="green")
+        
+        for milestone in milestones:
+            milestone_table.add_row(
+                milestone['name'],
+                milestone['deliverable'],
+                f"{milestone['percentage']}%"
+            )
+        
+        console.print(milestone_table)
+        console.print()
+        
+        # Save proposal
+        output_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"proposal_{client_name.replace(' ', '_')}_{timestamp}.md"
+        filepath = output_dir / filename
+        
+        # Generate proposal markdown
+        proposal_content = f"""# Technical Proposal for {client_name}
+
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M')}
+**Estimated Cost:** ${min_cost:,}-${max_cost:,}
+**Timeline:** {min_weeks:.1f}-{max_weeks:.1f} weeks
+
+---
+
+## Executive Summary
+
+I am excited to submit my proposal for your project. After analyzing your requirements, I have developed a comprehensive technical approach that will deliver a robust, scalable solution.
+
+**Key Details:**
+- **Project Timeline:** {min_weeks:.1f}-{max_weeks:.1f} weeks
+- **Estimated Effort:** {min_hours}-{max_hours} hours
+- **Complexity Level:** {complexity}
+- **Investment:** ${min_cost:,}-${max_cost:,}
+
+---
+
+## Technical Approach
+
+{design_doc}
+
+---
+
+## Project Milestones & Deliverables
+
+"""
+        
+        for milestone in milestones:
+            proposal_content += f"### {milestone['name']} ({milestone['percentage']}% of project)\n"
+            proposal_content += f"**Deliverable:** {milestone['deliverable']}\n\n"
+        
+        proposal_content += f"""---
+
+## Timeline
+
+- **Start Date:** As soon as hired
+- **Earliest Completion:** {min_completion.strftime('%Y-%m-%d')}
+- **Expected Completion:** {max_completion.strftime('%Y-%m-%d')}
+
+---
+
+## Why Choose Me?
+
+✅ **Technical Expertise:** Full-stack development with modern frameworks and best practices
+✅ **AI-Assisted Development:** Leveraging cutting-edge AI tools for faster, higher-quality delivery
+✅ **Quality Assurance:** Comprehensive testing, documentation, and code reviews
+✅ **Clear Communication:** Regular updates, transparent progress tracking, and daily standups
+✅ **Production-Ready Code:** Clean, maintainable, scalable architecture following industry standards
+
+---
+
+## Development Process
+
+1. **Requirements Clarification** (Day 1)
+   - Review specifications in detail
+   - Clarify any ambiguities
+   - Finalize technical approach
+
+2. **Iterative Development** (Weeks 1-{int(max_weeks)})
+   - Build in 1-week sprints
+   - Daily progress updates
+   - Weekly demos of completed features
+
+3. **Testing & QA** (Final Week)
+   - Comprehensive testing
+   - Bug fixes and optimization
+   - Documentation completion
+
+4. **Deployment & Support** (Final Days)
+   - Production deployment
+   - Knowledge transfer
+   - 30 days of post-launch support included
+
+---
+
+## Deliverables
+
+You will receive:
+- ✅ Complete, documented source code
+- ✅ Deployment instructions
+- ✅ Test suite with >80% coverage
+- ✅ API documentation (if applicable)
+- ✅ User documentation
+- ✅ 30 days of bug fixes and support
+
+---
+
+## Next Steps
+
+1. Schedule a brief call to discuss requirements in detail
+2. Finalize scope, timeline, and budget
+3. Sign contract and begin development immediately
+4. Receive first milestone delivery within {int(min_weeks)} week(s)
+
+I'm available to start immediately and committed to delivering exceptional results on time and within budget.
+
+Looking forward to collaborating with you!
+
+Best regards
+"""
+        
+        filepath.write_text(proposal_content, encoding='utf-8')
+        
+        print_success(f"Proposal saved to: {filepath}")
+        
+        # Show next steps
+        console.print("\n[bold cyan]💡 Next Steps:[/bold cyan]")
+        console.print("  1. Open and review the proposal")
+        console.print("  2. Add your personal introduction (2-3 sentences)")
+        console.print("  3. Add 2-3 relevant portfolio links")
+        console.print("  4. Adjust pricing if needed based on competition")
+        console.print("  5. Copy to Upwork/Freelancer and submit")
+        console.print("\n[bold green]⚡ Total time: ~5 minutes to submit a winning proposal![/bold green]\n")
+        
+        logger.info(f"Freelance proposal generated: {filepath}")
+        
+    except Exception as e:
+        print_error(f"Error generating proposal: {str(e)}")
+        logger.error(f"Proposal generation error: {e}", exc_info=True)
+        raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()
 
